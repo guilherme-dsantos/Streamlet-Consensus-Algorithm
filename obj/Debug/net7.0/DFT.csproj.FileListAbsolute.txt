@@ -1,0 +1,14 @@
+C:\GitHub\DFT\bin\Debug\net7.0\DFT.exe
+C:\GitHub\DFT\bin\Debug\net7.0\DFT.deps.json
+C:\GitHub\DFT\bin\Debug\net7.0\DFT.runtimeconfig.json
+C:\GitHub\DFT\bin\Debug\net7.0\DFT.dll
+C:\GitHub\DFT\bin\Debug\net7.0\DFT.pdb
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.GeneratedMSBuildEditorConfig.editorconfig
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.AssemblyInfoInputs.cache
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.AssemblyInfo.cs
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.csproj.CoreCompileInputs.cache
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.dll
+C:\GitHub\DFT\obj\Debug\net7.0\refint\DFT.dll
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.pdb
+C:\GitHub\DFT\obj\Debug\net7.0\DFT.genruntimeconfig.cache
+C:\GitHub\DFT\obj\Debug\net7.0\ref\DFT.dll
