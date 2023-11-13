@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using Google.Protobuf;
 
 
@@ -46,27 +45,22 @@ internal class Program{
             Console.WriteLine($"Connected to the target node at {addresses[0]}:{addresses[1]}");
         }
 
-        Message messageWithBlock = new Message
-{
-    MessageType = Type.Vote,
-    Content = new Content { Block = new Block
-    {
-        Hash = ByteString.CopyFrom(new byte[] { 0x01, 0x02, 0x03 }),
-        Epoch = 123,
-        Length = 10,
-        Transactions = { new Transaction
-        {
-            Sender = 1,
-            Receiver = 2,
-            Id = 123,
-            Amount = 500.0
-        }}
-    }},
-    Sender = 789
-};
+        Message messageWithBlock = new() {
+            MessageType = Type.Vote,
+            Content = new Content { Block = new Block {
+                Hash = ByteString.CopyFrom(new byte[] { 0x01, 0x02, 0x03 }),
+                Epoch = 123,
+                Length = 10,
+            Transactions = { new Transaction {
+                Sender = 1,
+                Receiver = 2,
+                Id = 123,
+                Amount = 500.0}}
+            }},
+            Sender = 789
+        };
 
         
-    
         while(true) {
             Thread.Sleep(10000);
             // Generate random number with given seed
@@ -98,27 +92,26 @@ internal class Program{
 
         while (true) {
             byte[] data = new byte[1024]; 
+            int bytesRead = stream.Read(data, 0, data.Length);
 
-        int bytesRead = stream.Read(data, 0, data.Length);
+            if (bytesRead == 0) {
+                continue;
+            }
 
-        if (bytesRead == 0) {
-            continue;
-        }
+            Message? receivedMessage = DeserializeMessage(data, bytesRead);
 
-        Message? receivedMessage = DeserializeMessage(data, bytesRead);
+            if (receivedMessage != null) {
+                if (!IsMessageReceived(receivedMessage)) {
+                    Console.WriteLine("Message: " + receivedMessage); // Adjust to display message content
+                    AddReceivedMessage(receivedMessage);
 
-        if (receivedMessage != null) {
-            if (!IsMessageReceived(receivedMessage)) {
-                Console.WriteLine("Message: " + receivedMessage); // Adjust to display message content
-                AddReceivedMessage(receivedMessage);
-
-                // Broadcast the received message to other nodes
-                Echo(receivedMessage);
-            } else {
-                Console.WriteLine("Message already received");
+                    // Echo message to the other nodes
+                    Echo(receivedMessage);
+                } else {
+                    Console.WriteLine("Message already received");
+                }
             }
         }
-    }
     }
 
 
@@ -146,32 +139,32 @@ internal class Program{
     }
 
     // Function to serialize a Message object into bytes
-public static byte[] SerializeMessage(Message message) {
-    using (MemoryStream stream = new MemoryStream()) {
-        message.WriteTo(stream);
-        return stream.ToArray();
+    public static byte[] SerializeMessage(Message message) {
+        using (MemoryStream stream = new MemoryStream()) {
+            message.WriteTo(stream);
+            return stream.ToArray();
+        }
     }
-}
 
-// Function to deserialize bytes into a Message object
-public static Message? DeserializeMessage(byte[] data, int length) {
-    try {
-        Message message = new Message();
-        message.MergeFrom(data, 0, length);
-        return message;
-    } catch (InvalidProtocolBufferException ex) {
-        Console.WriteLine("Error deserializing message: " + ex.Message);
-        return null;
+    // Function to deserialize bytes into a Message object
+    public static Message? DeserializeMessage(byte[] data, int length) {
+        try {
+            Message message = new Message();
+            message.MergeFrom(data, 0, length);
+            return message;
+        } catch (InvalidProtocolBufferException ex) {
+            Console.WriteLine("Error deserializing message: " + ex.Message);
+            return null;
+        }
     }
-}
 
-public static bool IsMessageReceived(Message message) {
-    // Add your logic to check if the message is already in the ReceivedMessages list
-    return ReceivedMessages.Contains(message);
-}
+    public static bool IsMessageReceived(Message message) {
+        // Add your logic to check if the message is already in the ReceivedMessages list
+        return ReceivedMessages.Contains(message);
+    }
 
-public static void AddReceivedMessage(Message message) {
-    // Add your logic to add the message to the ReceivedMessages list
-    ReceivedMessages.Add(message);
-}
-}
+    public static void AddReceivedMessage(Message message) {
+        // Add your logic to add the message to the ReceivedMessages list
+        ReceivedMessages.Add(message);
+    }
+    }
