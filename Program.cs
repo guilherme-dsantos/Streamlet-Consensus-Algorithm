@@ -2,13 +2,14 @@
 using System.Net.Sockets;
 using Google.Protobuf;
 
-
 internal class Program{
 
     public const int number_nodes = 3;
     public static List<TcpClient> other_nodes_addresses = new();
     public static List<Message> ReceivedMessages = new();
     public static string[] selfAddress = new string[2];
+    
+    private static readonly object lockObject = new();
 
     static void Main(string[] args) {
         if(args.Length != 1) {
@@ -18,8 +19,8 @@ internal class Program{
        
         int node_id = int.Parse(args[0]);
         Console.WriteLine($"Node ID: {node_id}");
-        string line = File.ReadLines("ips.txt").Skip(node_id).Take(1).First();
-              
+        string line = File.ReadLines("ips.txt").Skip(node_id-1).Take(1).First();
+        Console.WriteLine($"Node IP: {node_id} -> {line}");    
          // Create a Random object with the seed "42"
         int seed = 42;
         Random random = new(seed);
@@ -33,42 +34,38 @@ internal class Program{
 
         Thread.Sleep(10_000);
         //add other node connections
-        for(int i = 0; i < number_nodes; i++){
+        for(int i = 1; i <= number_nodes; i++){
             if(i.Equals(node_id)){
                 continue;
             }    
-            string others = File.ReadLines("ips.txt").Skip(i).Take(1).First();
+            string others = File.ReadLines("ips.txt").Skip(i-1).Take(1).First();
             string[] addresses = others.Split(":");
             TcpClient client = new();
             client.Connect(IPAddress.Parse(addresses[0]), int.Parse(addresses[1]));
             other_nodes_addresses.Add(client);
             Console.WriteLine($"Connected to the target node at {addresses[0]}:{addresses[1]}");
         }
-
-        Message messageWithBlock = new() {
-            MessageType = Type.Vote,
-            Content = new Content { Block = new Block {
-                Hash = ByteString.CopyFrom(new byte[] { 0x01, 0x02, 0x03 }),
-                Epoch = 123,
-                Length = 10,
-            Transactions = { new Transaction {
-                Sender = 1,
-                Receiver = 2,
-                Id = 123,
-                Amount = 500.0}}
-            }},
-            Sender = 789
-        };
-
         
         while(true) {
             Thread.Sleep(10000);
             // Generate random number with given seed
-            int randomNumber = random.Next(number_nodes);
+            int randomNumber = random.Next(number_nodes + 1) + 1;
             Console.WriteLine($"Leader is: {randomNumber}");
-    
             if(node_id.Equals(randomNumber)) { // If node is leader
-                Console.WriteLine("Im the leader");
+                Message messageWithBlock = new() {
+                    MessageType = Type.Propose,
+                    Content = new Content { Block = new Block {
+                    Hash = ByteString.CopyFrom(new byte[] { 0x01, 0x02, 0x03 }),
+                    Epoch = node_id,
+                    Length = node_id,
+                Transactions = { new Transaction {
+                    Sender = node_id,
+                    Receiver = node_id,
+                    Id = node_id,
+                    Amount = 500.0}}
+                }},
+                    Sender = node_id
+                };
                 URB_Broadcast(messageWithBlock);
             }
         }
@@ -77,7 +74,7 @@ internal class Program{
 
     static void StartListener(TcpListener listener) {
         listener.Start();
-        Console.WriteLine("Listener " + listener.ToString() + " node is waiting for incoming connections...");
+        Console.WriteLine("Listener IP:" + selfAddress[0] + " PORT:" + selfAddress[1] + " node is waiting for incoming connections...");
 
         while (true) {
             TcpClient client = listener.AcceptTcpClient();
@@ -87,9 +84,7 @@ internal class Program{
     }
 
     static void HandleConnection(TcpClient client) {
-        Console.WriteLine("One node connected");
         NetworkStream stream = client.GetStream();
-
         while (true) {
             byte[] data = new byte[1024]; 
             int bytesRead = stream.Read(data, 0, data.Length);
@@ -98,17 +93,16 @@ internal class Program{
                 continue;
             }
 
+            
             Message? receivedMessage = DeserializeMessage(data, bytesRead);
-
             if (receivedMessage != null) {
-                if (!IsMessageReceived(receivedMessage)) {
-                    Console.WriteLine("Message: " + receivedMessage); // Adjust to display message content
-                    AddReceivedMessage(receivedMessage);
-
-                    // Echo message to the other nodes
-                    Echo(receivedMessage);
-                } else {
-                    Console.WriteLine("Message already received");
+                lock(lockObject) {
+                    if (!IsMessageReceived(receivedMessage)) {
+                        Console.WriteLine("Message Received: " + receivedMessage); // Adjust to display message content
+                        AddReceivedMessage(receivedMessage);
+                        // Echo message to the other nodes
+                        Echo(receivedMessage);
+                    }
                 }
             }
         }
@@ -118,10 +112,10 @@ internal class Program{
    public static void URB_Broadcast(Message message) {
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
-
         // Send the serialized message
-        TcpClient client = new TcpClient();
+        TcpClient client = new();
         client.Connect(IPAddress.Parse(selfAddress[0]), int.Parse(selfAddress[1]));
+        Console.WriteLine("Broadcast Message: " + message);
         NetworkStream networkStream = client.GetStream();
         networkStream.Write(serializedMessage, 0, serializedMessage.Length);
         networkStream.Close();
@@ -140,16 +134,15 @@ internal class Program{
 
     // Function to serialize a Message object into bytes
     public static byte[] SerializeMessage(Message message) {
-        using (MemoryStream stream = new MemoryStream()) {
-            message.WriteTo(stream);
-            return stream.ToArray();
-        }
+        using MemoryStream stream = new();
+        message.WriteTo(stream);
+        return stream.ToArray();
     }
 
     // Function to deserialize bytes into a Message object
     public static Message? DeserializeMessage(byte[] data, int length) {
         try {
-            Message message = new Message();
+            Message message = new();
             message.MergeFrom(data, 0, length);
             return message;
         } catch (InvalidProtocolBufferException ex) {
@@ -159,12 +152,10 @@ internal class Program{
     }
 
     public static bool IsMessageReceived(Message message) {
-        // Add your logic to check if the message is already in the ReceivedMessages list
         return ReceivedMessages.Contains(message);
     }
 
     public static void AddReceivedMessage(Message message) {
-        // Add your logic to add the message to the ReceivedMessages list
         ReceivedMessages.Add(message);
     }
-    }
+}
