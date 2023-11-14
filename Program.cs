@@ -47,10 +47,11 @@ internal class Program{
         }
         
         while(true) {
-            Thread.Sleep(10000);
+            Thread.Sleep(100);
             // Generate random number with given seed
-            int randomNumber = random.Next(number_nodes + 1) + 1;
+            int randomNumber = random.Next(number_nodes) + 1;
             Console.WriteLine($"Leader is: {randomNumber}");
+            /*
             if(node_id.Equals(randomNumber)) { // If node is leader
                 Message messageWithBlock = new() {
                     MessageType = Type.Propose,
@@ -68,6 +69,7 @@ internal class Program{
                 };
                 URB_Broadcast(messageWithBlock);
             }
+            */
         }
        
     }
