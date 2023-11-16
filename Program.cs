@@ -1,19 +1,26 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 
 internal class Program{
 
-    public const int NrNodes = 4;
+    public const int TotalNodes = 4;
+
+    public static int IDNode;
     public static List<TcpClient> OtherAddresses = new();
     public static List<Message> ReceivedMessages = new();
     public static string[] SelfAddress = new string[2];
 
-    public static int NrEpoch = 0;
-    public static int DeltaEpoch = 10_000;
+    public static int Epoch = 0;
+    public static int DeltaEpoch = 5_000;
     public static List<Block> BlockChain = new();
     
-    private static readonly object Lock = new();
+    public static readonly object MessageLock = new();
+    public static readonly object WriteLock = new();
+    public volatile static CountdownEvent cde = new(TotalNodes - 1);
+    public static int Leader;
 
     static void Main(string[] args) {
         
@@ -29,14 +36,18 @@ internal class Program{
         }
 
        
-        int IdNode = int.Parse(args[0]);
+        IDNode = int.Parse(args[0]);
         //Console.WriteLine($"Node ID: {IdNode}");
-        string AdressLine = File.ReadLines("ips.txt").Skip(IdNode-1).Take(1).First();  
+        string address_from_file = File.ReadLines("ips.txt").Skip(IDNode-1).Take(1).First();  
          // Create a Random object with the seed "42"
-        int seed = 1;
+
+        //Genesis block
+        BlockChain.Add(InitBlock());
+
+        int seed = 9054;
         Random random = new(seed);
 
-        SelfAddress = AdressLine.Split(":");
+        SelfAddress = address_from_file.Split(":");
         
         // Start a thread for the listener
         TcpListener listener = new(IPAddress.Parse(SelfAddress[0]), int.Parse(SelfAddress[1]));
@@ -45,10 +56,10 @@ internal class Program{
         Console.WriteLine("Waiting 10 seconds for other nodes to start listening...");
         Thread.Sleep(10_000);
         //add other node connections
-        for(int i = 1; i <= NrNodes; i++){
-            if(i.Equals(IdNode)){
+        for(int i = 1; i <= TotalNodes; i++) {
+            if(i.Equals(IDNode)){
                 continue;
-            }    
+            }
             string others = File.ReadLines("ips.txt").Skip(i-1).Take(1).First();
             string[] addresses = others.Split(":");
             TcpClient client = new();
@@ -56,19 +67,24 @@ internal class Program{
             OtherAddresses.Add(client);
             //Console.WriteLine($"Connected to the target node at {addresses[0]}:{addresses[1]}");
         }
-        
-        while(true) {
-             // Generate random number with given seed
-            int Leader = random.Next(NrNodes) + 1;
 
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine($"Epoch: {++NrEpoch} started with Leader {Leader}");
-            Console.ResetColor();
-           
+        // Wait for all nodes to be ready
+        cde.Wait();
+        while(true) {
+            
+             // Generate random number with given seed
+            Leader = random.Next(TotalNodes) + 1;
+
+             //Print epoch number and leader to console in blue every time a new epoch starts
+            lock(WriteLock) {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine($"Epoch: {++Epoch} started with Leader {Leader}");
+                Console.ResetColor();
+            }
             //Console.WriteLine($"Leader is: {randomNumber}");
-            if(IsLeader(IdNode,Leader)) { // If node is leader
-                Message ProposeMessage = ProposeBlock(IdNode);
-                URB_Broadcast(ProposeMessage);
+            if(IsLeader()) { //if leader, propose block
+                byte[] hash = ComputeParentHash();
+                ProposeBlock(IDNode, hash, Epoch, BlockChain.Count, new List<Transaction>());
             }
 
             Thread.Sleep(DeltaEpoch);
@@ -88,23 +104,31 @@ internal class Program{
     }
 
     static void HandleConnection(TcpClient client) {
+        if (cde.CurrentCount > 0) {
+            cde.Signal();
+        }
         NetworkStream stream = client.GetStream();
         while (true) {
+            
             byte[] data = new byte[1024]; 
             int bytesRead = stream.Read(data, 0, data.Length);
-
             if (bytesRead == 0) {
                 continue;
             }
-
+            
             Message? receivedMessage = DeserializeMessage(data, bytesRead);
             if (receivedMessage != null) {
-                lock(Lock) {
+                lock(MessageLock) {
                     if (!IsMessageReceived(receivedMessage)) {
-                        Console.WriteLine("Message Received: " + receivedMessage); // Adjust to display message content
-                        AddReceivedMessage(receivedMessage);
+                        lock(WriteLock){
+                            Console.WriteLine("Message Received: " + receivedMessage); // Adjust to display message content
+                        }
+                        ReceivedMessages.Add(receivedMessage);
                         // Echo message to the other nodes
                         Echo(receivedMessage);
+                        if(!IsLeader() && receivedMessage.MessageType == Type.Propose) { //other nodes vote for proposed block
+                            VoteBlock(receivedMessage);
+                        }
                     }
                 }
             }
@@ -112,7 +136,7 @@ internal class Program{
     }
 
 
-   public static void URB_Broadcast(Message message) {
+    public static void URB_Broadcast(Message message) {
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
         // Send the serialized message
@@ -123,9 +147,9 @@ internal class Program{
         networkStream.Write(serializedMessage, 0, serializedMessage.Length);
         networkStream.Close();
         client.Close();
-}
+    }
 
-    public static void Echo(Message message){
+    public static void Echo(Message message) {
          // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
         foreach (TcpClient otherClient in OtherAddresses) {
@@ -133,6 +157,57 @@ internal class Program{
             // Send only the relevant bytes received, not the entire buffer
             otherStream.Write(serializedMessage, 0, serializedMessage.Length);
         }
+    }
+
+    public static Block InitBlock() {
+        Block block = new() {
+            Hash = ByteString.CopyFrom(new byte[] {0}),
+            Epoch = 0,
+            Length = 0,
+            Transactions = { new Transaction {
+                Sender = 0,
+                Receiver = 0,
+                Id = 0,
+                Amount = 0.0
+            }}
+        };
+        return block;
+    }
+
+    public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, List<Transaction> transactions){
+        Message messageWithBlock = new() {
+            MessageType = Type.Propose,
+            Content = new Content { 
+                Block = new Block {
+                    Hash = ByteString.CopyFrom(hash),
+                    Epoch = epoch,
+                    Length = length,
+                    Transactions = {transactions},
+                }
+            },
+            Sender = node_id
+        };
+        URB_Broadcast(messageWithBlock);
+    }
+
+    public static void VoteBlock(Message proposedBlock){
+        Block voteBlock = proposedBlock.Content.Block;
+        voteBlock.Transactions.Clear();
+        Message voteMessage = new() {
+            MessageType = Type.Vote,
+            Content = new Content { 
+                Block = voteBlock
+            },
+        Sender = IDNode
+        };
+        URB_Broadcast(voteMessage);
+    }
+
+    public static byte[] ComputeParentHash() {
+        Block lastBlock = BlockChain.Last();
+        byte[] hash = lastBlock.Hash.ToByteArray();
+        byte[] newHash = SHA1.HashData(hash);
+        return newHash;
     }
 
     // Function to serialize a Message object into bytes
@@ -154,36 +229,14 @@ internal class Program{
         }
     }
 
+    
+
     public static bool IsMessageReceived(Message message) {
         return ReceivedMessages.Contains(message);
     }
 
-    public static void AddReceivedMessage(Message message) {
-        ReceivedMessages.Add(message);
+    public static bool IsLeader(){
+        return IDNode.Equals(Leader);
     }
-
-    public static bool IsLeader(int node_id, int randomNumber){
-        return node_id.Equals(randomNumber);
-    }
-
-    public static Message ProposeBlock(int node_id){
-        Message messageWithBlock = new() {
-            MessageType = Type.Propose,
-            Content = new Content { 
-                Block = new Block {
-                    Hash = ByteString.CopyFrom(new byte[] { 0x01, 0x02, 0x03 }),
-                    Epoch = node_id,
-                    Length = node_id,
-                    Transactions = { new Transaction {
-                        Sender = node_id,
-                        Receiver = node_id,
-                        Id = node_id,
-                        Amount = 500.0}
-                    }
-                }
-            },
-            Sender = node_id
-        };
-        return messageWithBlock;
-    }
+    
 }
