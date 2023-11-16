@@ -1,25 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "C:\\GitHub\\DFT\\DFT.csproj": {}
+    "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\DFT.csproj": {}
   },
   "projects": {
-    "C:\\GitHub\\DFT\\DFT.csproj": {
+    "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\DFT.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\GitHub\\DFT\\DFT.csproj",
+        "projectUniqueName": "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\DFT.csproj",
         "projectName": "DFT",
-        "projectPath": "C:\\GitHub\\DFT\\DFT.csproj",
-        "packagesPath": "C:\\Users\\gdias\\.nuget\\packages\\",
-        "outputPath": "C:\\GitHub\\DFT\\obj\\",
+        "projectPath": "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\DFT.csproj",
+        "packagesPath": "C:\\Users\\lcvia\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\gdias\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\lcvia\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net7.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

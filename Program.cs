@@ -13,6 +13,8 @@ internal class Program{
     public static List<Message> ReceivedMessages = new();
     public static string[] SelfAddress = new string[2];
 
+    public static List<Block> BlocksProposed = new();
+
     public static int Epoch = 0;
     public static int DeltaEpoch = 5_000;
     public static List<Block> BlockChain = new();
@@ -84,7 +86,8 @@ internal class Program{
             //Console.WriteLine($"Leader is: {randomNumber}");
             if(IsLeader()) { //if leader, propose block
                 byte[] hash = ComputeParentHash();
-                ProposeBlock(IDNode, hash, Epoch, BlockChain.Count, new List<Transaction>());
+                ProposeBlock(IDNode, hash, Epoch, BlockChain.Count, new List<Transaction>()); 
+                //THE BLOCKCHAIN.COUNT IS NOT TRUE WITH FORKS (USE THE LAST FUNCTION MADE BUT RETURN THE AUX+1 AND NOT THE BLOCK)
             }
 
             Thread.Sleep(DeltaEpoch);
@@ -123,11 +126,32 @@ internal class Program{
                         lock(WriteLock){
                             Console.WriteLine("Message Received: " + receivedMessage); // Adjust to display message content
                         }
-                        ReceivedMessages.Add(receivedMessage);
+                        ReceivedMessages.Add(receivedMessage); //DAMOS ECHO DE VOTES?
                         // Echo message to the other nodes
                         Echo(receivedMessage);
                         if(!IsLeader() && receivedMessage.MessageType == Type.Propose) { //other nodes vote for proposed block
                             VoteBlock(receivedMessage);
+                        }
+                        if(receivedMessage.MessageType == Type.Propose){
+                            BlocksProposed.Add(receivedMessage.Content.Block);
+                        }
+                        if(receivedMessage.MessageType == Type.Vote){ //WHAT HAPPENS IF I RECEIVE A VOTE BEFORE A PROPOSE?
+                           /* if(!BlocksProposed.Contains(receivedMessage.Content.Block)){
+                                BlocksProposed.Add(receivedMessage.Content.Block);//LIKE THIS BLOCK WOULD BE DUPLICATED
+                            }*/
+                            foreach (Block item in BlocksProposed)
+                            {
+                                if(item.Equals(receivedMessage.Content.Block)){
+                                    item.Set.Add(receivedMessage.Sender);
+                                    if(item.Set.Length > TotalNodes/2){
+                                        BlockChain.Add(receivedMessage.Content.Block);
+                                        Console.WriteLine("Block Notarized: " + receivedMessage.Content.Block);
+                                    }
+                                        
+                                }
+                            }
+                            
+
                         }
                     }
                 }
@@ -164,6 +188,8 @@ internal class Program{
             Hash = ByteString.CopyFrom(new byte[] {0}),
             Epoch = 0,
             Length = 0,
+            Set = new HashSet<int>(),
+            //Notarized=false;
             Transactions = { new Transaction {
                 Sender = 0,
                 Receiver = 0,
@@ -179,9 +205,10 @@ internal class Program{
             MessageType = Type.Propose,
             Content = new Content { 
                 Block = new Block {
-                    Hash = ByteString.CopyFrom(hash),
+                    Hash = ByteString.CopyFrom(hash), 
                     Epoch = epoch,
                     Length = length,
+                    Set = new HashSet<int>(),
                     Transactions = {transactions},
                 }
             },
@@ -198,7 +225,7 @@ internal class Program{
             Content = new Content { 
                 Block = voteBlock
             },
-        Sender = IDNode
+            Sender = IDNode
         };
         URB_Broadcast(voteMessage);
     }
@@ -238,5 +265,18 @@ internal class Program{
     public static bool IsLeader(){
         return IDNode.Equals(Leader);
     }
+
+    /*public Block BlockToProposeAfter(){
+        int aux=-1;
+        Block block;
+        foreach (Block item in BlockChain)
+        {
+            if(item.Length > aux){
+                aux=item.Length;
+                block=item;
+            } 
+        }
+        return block;
+    } AFTER ALL THE LAST MIGHT WORK*/
     
 }

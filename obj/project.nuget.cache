@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "BjWof7sInGHyNjxirb6yJE1hmhR9rj32RZFRLpE6aMHLhvkQ4DqnEHMIH+Opl/HOuDALjPSedrYcKXV7ytToVw==",
+  "dgSpecHash": "nDOoBuEcnnX0+sXr64UwjqZgt0/R9kkjgGgfblbKE2Yoe2kX+Hk+vfhOZuaIbyDM+2vs8qNn4rQbtbYi+lqOMA==",
   "success": true,
-  "projectFilePath": "C:\\GitHub\\DFT\\DFT.csproj",
+  "projectFilePath": "C:\\Users\\lcvia\\Documents\\GitHub\\DFT\\DFT.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\gdias\\.nuget\\packages\\google.protobuf\\3.25.0\\google.protobuf.3.25.0.nupkg.sha512"
+    "C:\\Users\\lcvia\\.nuget\\packages\\google.protobuf\\3.25.0\\google.protobuf.3.25.0.nupkg.sha512"
   ],
   "logs": []
 }
