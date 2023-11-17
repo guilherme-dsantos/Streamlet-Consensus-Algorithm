@@ -150,6 +150,7 @@ internal class Program{
                                     if(item.Value.Count > TotalNodes/2  && !BlockChain.Contains(receivedMessage.Content.Block)){
                                         BlockChain.Add(receivedMessage.Content.Block);
                                         Console.WriteLine("Block Notarized: " + receivedMessage.Content.Block);
+                                        //CheckFinalizationCriteria();
                                     }
                                         
                                 }
@@ -216,6 +217,7 @@ internal class Program{
     public static void VoteBlock(Message proposedBlock){
         Block voteBlock = proposedBlock.Content.Block;
         voteBlock.Transactions.Clear();
+        if(voteBlock.Length!=BlockToProposeAfter()) return;
         Message voteMessage = new() {
             MessageType = Type.Vote,
             Content = new Content { 
@@ -272,5 +274,13 @@ internal class Program{
         }
         return aux+1;
     } 
+
+    public static void CheckFinalizationCriteria(){
+        foreach (Block item in BlockChain)
+        {
+            
+        }
+
+    }
     
 }
