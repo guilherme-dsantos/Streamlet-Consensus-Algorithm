@@ -13,6 +13,8 @@ internal class Program{
     public static volatile int Votes = 0;
     public static string[] SelfAddress = new string[2];
 
+    public static NetworkStream? MyselfStream;
+
     public static int Epoch = 0;
     public static int DeltaEpoch = 5_000;
     public static Block proposedBlock = new();
@@ -70,6 +72,11 @@ internal class Program{
             //Console.WriteLine($"Connected to the target node at {addresses[0]}:{addresses[1]}");
         }
 
+        TcpClient myself = new();
+        myself.Connect(IPAddress.Parse(SelfAddress[0]), int.Parse(SelfAddress[1]));
+        //Console.WriteLine("Broadcast Message: " + message);
+        MyselfStream = myself.GetStream();
+
         // Wait for all nodes to be ready
         cde.Wait();
         while(true) {
@@ -98,7 +105,8 @@ internal class Program{
         listener.Start();
         //Console.WriteLine("Listener IP:" + SelfAddress[0] + " PORT:" + SelfAddress[1] + " node is waiting for incoming connections...");
 
-        while (true) {
+        for(int i = 0; i < TotalNodes; i++) {
+            //Console.WriteLine(i);
             TcpClient client = listener.AcceptTcpClient();
             // Handle the incoming connection in task
             Task.Factory.StartNew(() => HandleConnection(client));
@@ -162,13 +170,7 @@ internal class Program{
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
         // Send the serialized message
-        TcpClient client = new();
-        client.Connect(IPAddress.Parse(SelfAddress[0]), int.Parse(SelfAddress[1]));
-        //Console.WriteLine("Broadcast Message: " + message);
-        NetworkStream networkStream = client.GetStream();
-        networkStream.Write(serializedMessage, 0, serializedMessage.Length);
-        networkStream.Close();
-        client.Close();
+        MyselfStream?.Write(serializedMessage, 0, serializedMessage.Length);
     }
 
     public static void Echo(Message message) {
@@ -215,7 +217,7 @@ internal class Program{
         if(lastBlocks[0].Epoch == lastBlocks[1].Epoch - 1 && lastBlocks[1].Epoch == lastBlocks[2].Epoch - 1 &&
            lastBlocks[0].Length == lastBlocks[1].Length - 1 && lastBlocks[1].Length == lastBlocks[2].Length - 1) {
             PointerLastFinalized = lastBlocks[1].Length;
-            lock(WriteLock){
+            lock(WriteLock) {
                 Console.WriteLine("Finalized Epoch: " + lastBlocks[1].Epoch);
                 Console.WriteLine("Pointer to last block finalized " + PointerLastFinalized);
             }
