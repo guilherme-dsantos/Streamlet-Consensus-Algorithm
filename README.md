@@ -39,7 +39,13 @@ Before you begin, make sure you have the following installed:
 ## Usage
 
 1. **Run the project:**
-   In the \bin\Debug\net7.0\ folder:
+   In the root folder \DFT:
+
+   ```bash
+   .\bin\Debug\net7.0\DFT.exe <node_id>
+   ```
+
+   Or copy the `ips.txt` file to .\bin\Debug\net7.0\ and run inside this folder:
 
    ```bash
    .\DFT.exe <node_id>
@@ -56,3 +62,5 @@ Before you begin, make sure you have the following installed:
 Michel Raynal. Fault-Tolerant Message-Passing Distributed Systems: An Algorithmic Approach. Springer. 2018. [Ebook](https://link.springer.com/book/10.1007/978-3-319-94141-7)
 
 Streamlet: Textbook Streamlined Blockchains: [Paper](https://dl.acm.org/doi/10.1145/3419614.3423256)
+
+Google protobuf: [github](https://github.com/protocolbuffers/protobuf)
