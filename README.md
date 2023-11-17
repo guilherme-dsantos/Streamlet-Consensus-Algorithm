@@ -3,83 +3,55 @@
 Class project for the Distributed Fault Tolerance Course.
 FCUL 2023
 
-## Overview
-
-The **Implementation of the Streamlet Consensus Algorithm in Blockchain** project is a student-driven initiative that explores the practical application of the Streamlet consensus algorithm within a blockchain system. The Streamlet algorithm, known for its simplicity and efficiency, is leveraged to enhance the consensus mechanism, making blockchain more accessible and user-friendly.
-
-### Key Features
-
-- **Simplified Consensus:** Explore how the Streamlet algorithm simplifies the traditional blockchain consensus process, making it more intuitive for users.
-
-- **Efficiency Enhancement:** Showcase the improved efficiency achieved through the integration of the Streamlet algorithm, contributing to faster and more reliable consensus in blockchain networks.
-
-- **Practical Implementation:** The project provides a real-world implementation of the Streamlet algorithm, demonstrating how it can be seamlessly integrated into an existing blockchain infrastructure.
-
-- **User-Friendly Blockchain:** Emphasize how the Streamlet algorithm contributes to a more user-friendly blockchain experience, addressing common complexities associated with consensus mechanisms.
-
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
    - [Prerequisites](#prerequisites)
    - [Installation](#installation)
 2. [Usage](#usage)
-   - [Configuration](#configuration)
-   - [Running the Project](#running-the-project)
-3. [Features](#features)
-   - [Overview of key features implemented using Streamlet](#overview-of-key-features-implemented-using-streamlet)
-4. [Contributing](#contributing)
-   - [Guidelines for contributing to the project](#guidelines-for-contributing-to-the-project)
-5. [License](#license)
-   - [Information about the project's licensing](#information-about-the-projects-licensing)
-6. [Acknowledgments](#acknowledgments)
-   - [Recognition of external libraries, resources, or individuals](#recognition-of-external-libraries-resources-or-individuals-who-inspired-or-supported-the-project)
-
-## Project Goals
-
-- **Understand Streamlet:** Gain a deep understanding of the Streamlet consensus algorithm and its implications for blockchain technology.
-
-- **Practical Application:** Implement the Streamlet algorithm in a practical setting, demonstrating its effectiveness in a real-world blockchain environment.
-
-- **User Accessibility:** Contribute to the development of a more accessible and user-friendly blockchain by leveraging the simplicity of Streamlet.
+3. [References](#references)
 
 ## Getting Started
 
-Explain how to get started with your project. Include information about prerequisites, installation steps, and any initial setup required.
+Follow these steps to set up and run the project on your local machine.
 
 ### Prerequisites
 
-**.NET 7 SDK:**
+Before you begin, make sure you have the following installed:
 
-- This project requires .NET 7 SDK for building and running. Download and install it from the official [.NET website](https://dotnet.microsoft.com/download/dotnet/7.0).
+1. **.NET 7 SDK:** This project requires .NET 7 SDK for building and running. Download and install it from the official [.NET website](https://dotnet.microsoft.com/download/dotnet/7.0).
 
 ### Installation
 
-Provide step-by-step instructions on how to install and set up your project.
+1. **Clone the Repository:**
+
+   ```bash
+   git clone https://github.com/guilherme-dsantos/DFT.git
+   cd DFT
+
+   ```
+
+2. **Build the Project:**
+   ```bash
+   dotnet build
+   ```
 
 ## Usage
 
-Explain how users can use your project. Include information about configuration, running the project, and any other relevant details.
+1. **Run the project:**
 
-### Configuration
+   ```bash
+   dotnet run <node_id>
+   ```
 
-Detail any configuration options or settings that users can customize.
+   Replace `<node_id>` with the specific node ID you want to assign to the running instance. Each node in your system should have a unique ID between \(1\) and \(5\), and users should provide this ID as a command-line argument when starting the application. The number of the ID corresponds to the line of the file `ips.txt`, which addresses the node with the given IP address on that line.
 
-### Running the Project
+2. **Explore the Streamlet Blockchain:**
 
-Explain how to run the project once it's set up.
+   Once the project is running, explore the Streamlet blockchain and observe the consensus algorithm in action.
 
-## Features
+## References
 
-Highlight the key features of your project.
+Michel Raynal. Fault-Tolerant Message-Passing Distributed Systems: An Algorithmic Approach. Springer. 2018. [Ebook] https://link.springer.com/book/10.1007/978-3-319-94141-7
 
-## Contributing
-
-Provide guidelines for contributing to your project. Include information about how others can report issues, submit feature requests, or contribute code.
-
-## License
-
-This project is licensed under [LICENSE_NAME]. See the [License](#license) section for more details.
-
-## Acknowledgments
-
-We extend our gratitude to [list of external libraries, resources, or individuals] for their valuable contributions and inspiration during the development of this project.
+Streamlet: Textbook Streamlined Blockchains: [Paper] https://dl.acm.org/doi/10.1145/3419614.3423256
