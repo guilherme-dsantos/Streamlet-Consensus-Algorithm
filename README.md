@@ -39,9 +39,10 @@ Before you begin, make sure you have the following installed:
 ## Usage
 
 1. **Run the project:**
+   In the \bin\Debug\net7.0\ folder:
 
    ```bash
-   dotnet run <node_id>
+   .\DFT.exe <node_id>
    ```
 
    Replace `<node_id>` with the specific node ID you want to assign to the running instance. Each node in your system should have a unique ID between \(1\) and \(5\), and users should provide this ID as a command-line argument when starting the application. The number of the ID corresponds to the line of the file `ips.txt`, which addresses the node with the given IP address on that line.
