@@ -5,28 +5,34 @@ using Google.Protobuf;
 
 internal class Program{
 
+    // Network Configuration
     public const int TotalNodes = 5;
-
     public static int IDNode;
     public static List<TcpClient> OtherAddresses = new();
     public static List<Message> ReceivedMessages = new();
     public static volatile int Votes = 0;
     public static string[] SelfAddress = new string[2];
-
     public static NetworkStream? MyselfStream;
 
+    // Consensus and Voting
+    public static bool VotedInEpoch; // Nodes can only vote at most once on each epoch
     public static int Epoch = 0;
     public static int DeltaEpoch = 5_000;
     public static Block proposedBlock = new();
-    
-    public static bool VotedInEpoch; //Nodes can only vote at most once on each epoch
+
+    // Blockchain
     public static List<Block> BlockChain = new();
-    
+
+    // Thread Synchronization
     public static readonly object MessageLock = new();
-    public static readonly object WriteLock = new();
     public volatile static CountdownEvent cde = new(TotalNodes - 1);
+
+    // Leader Election
     public static int Leader;
+
+    // Pointer for Last Finalized Block
     public static int PointerLastFinalized = 0;
+
 
     static void Main(string[] args) {
         
@@ -69,30 +75,22 @@ internal class Program{
             TcpClient client = new();
             client.Connect(IPAddress.Parse(addresses[0]), int.Parse(addresses[1]));
             OtherAddresses.Add(client);
-            //Console.WriteLine($"Connected to the target node at {addresses[0]}:{addresses[1]}");
         }
 
         TcpClient myself = new();
         myself.Connect(IPAddress.Parse(SelfAddress[0]), int.Parse(SelfAddress[1]));
-        //Console.WriteLine("Broadcast Message: " + message);
         MyselfStream = myself.GetStream();
 
         // Wait for all nodes to be ready
         cde.Wait();
         while(true) {
             VotedInEpoch = false; //Sets voted to false at the start of each epoch
-            
+            ++Epoch;
             // Generate random number with given seed
             Leader = random.Next(TotalNodes) + 1;
 
-            // Print epoch number and leader to console in blue every time a new epoch starts
-            Console.ForegroundColor = ConsoleColor.Blue;
-            lock(WriteLock) {
-                Console.WriteLine($"Epoch: {++Epoch} started with Leader {Leader}");
-                Console.ResetColor();
-            }
-            //Console.WriteLine($"Leader is: {randomNumber}");
-            if(IsLeader()) { //if leader, propose block
+            //if leader, propose block
+            if(IsLeader()) { 
                 byte[] hash = ComputeParentHash();
                 ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1, new List<Transaction>());
             }
@@ -103,10 +101,7 @@ internal class Program{
 
     static void StartListener(TcpListener listener) {
         listener.Start();
-        //Console.WriteLine("Listener IP:" + SelfAddress[0] + " PORT:" + SelfAddress[1] + " node is waiting for incoming connections...");
-
         for(int i = 0; i < TotalNodes; i++) {
-            //Console.WriteLine(i);
             TcpClient client = listener.AcceptTcpClient();
             // Handle the incoming connection in task
             Task.Factory.StartNew(() => HandleConnection(client));
@@ -135,9 +130,6 @@ internal class Program{
                             proposedBlock = receivedMessage.Content.Block;
                             Interlocked.Exchange(ref Votes,0);
                         }
-                        //lock(WriteLock) {
-                            //Console.WriteLine("Message Received: " + receivedMessage);
-                        //}
                         ReceivedMessages.Add(receivedMessage);
                         // Echo message to the other nodes
                         Echo(receivedMessage);
@@ -150,12 +142,11 @@ internal class Program{
                             if(Votes > TotalNodes / 2) { //if all nodes voted, add block to blockchain
                                 BlockChain.Add(proposedBlock);
                                 CheckFinalizationCriteria();
-                                lock(WriteLock){
-                                    foreach(Block b in BlockChain) {
-                                        Console.WriteLine(b);
-                                    }
+                                // Print epoch number and leader to console in blue every time a new epoch starts
+                                foreach(Block b in BlockChain) {
+                                    Console.WriteLine(b);
                                 }
-                                
+                                Console.WriteLine("--------------------");
                                 proposedBlock = new();
                             }
                         }
@@ -217,10 +208,6 @@ internal class Program{
         if(lastBlocks[0].Epoch == lastBlocks[1].Epoch - 1 && lastBlocks[1].Epoch == lastBlocks[2].Epoch - 1 &&
            lastBlocks[0].Length == lastBlocks[1].Length - 1 && lastBlocks[1].Length == lastBlocks[2].Length - 1) {
             PointerLastFinalized = lastBlocks[1].Length;
-            lock(WriteLock) {
-                Console.WriteLine("Finalized Epoch: " + lastBlocks[1].Epoch);
-                Console.WriteLine("Pointer to last block finalized " + PointerLastFinalized);
-            }
         }
     }
 
