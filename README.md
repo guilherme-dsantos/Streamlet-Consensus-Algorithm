@@ -52,6 +52,6 @@ Before you begin, make sure you have the following installed:
 
 ## References
 
-Michel Raynal. Fault-Tolerant Message-Passing Distributed Systems: An Algorithmic Approach. Springer. 2018. [Ebook] https://link.springer.com/book/10.1007/978-3-319-94141-7
+Michel Raynal. Fault-Tolerant Message-Passing Distributed Systems: An Algorithmic Approach. Springer. 2018. [Ebook](https://link.springer.com/book/10.1007/978-3-319-94141-7)
 
-Streamlet: Textbook Streamlined Blockchains: [Paper] https://dl.acm.org/doi/10.1145/3419614.3423256
+Streamlet: Textbook Streamlined Blockchains: [Paper](https://dl.acm.org/doi/10.1145/3419614.3423256)
