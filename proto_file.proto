@@ -17,7 +17,8 @@ message Block {
   bytes hash = 1;
   int32 epoch = 2;
   int32 length = 3;
-  repeated Transaction transactions = 4;
+  repeated int32 votesenders = 4;
+  repeated Transaction transactions = 5;
 }
 
 message Content {

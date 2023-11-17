@@ -126,24 +126,25 @@ internal class Program{
                         lock(WriteLock){
                             Console.WriteLine("Message Received: " + receivedMessage); // Adjust to display message content
                         }
-                        ReceivedMessages.Add(receivedMessage); //DAMOS ECHO DE VOTES?
+                        ReceivedMessages.Add(receivedMessage);
                         // Echo message to the other nodes
                         Echo(receivedMessage);
                         if(!IsLeader() && receivedMessage.MessageType == Type.Propose) { //other nodes vote for proposed block
                             VoteBlock(receivedMessage);
                         }
-                        if(receivedMessage.MessageType == Type.Propose){
+                        if(receivedMessage.MessageType == Type.Propose && !BlocksProposed.Contains(receivedMessage.Content.Block)){
                             BlocksProposed.Add(receivedMessage.Content.Block);
                         }
-                        if(receivedMessage.MessageType == Type.Vote){ //WHAT HAPPENS IF I RECEIVE A VOTE BEFORE A PROPOSE?
-                           /* if(!BlocksProposed.Contains(receivedMessage.Content.Block)){
-                                BlocksProposed.Add(receivedMessage.Content.Block);//LIKE THIS BLOCK WOULD BE DUPLICATED
-                            }*/
+                        if(receivedMessage.MessageType == Type.Vote){
+                            if(!BlocksProposed.Contains(receivedMessage.Content.Block)){
+                                BlocksProposed.Add(receivedMessage.Content.Block);
+                            }
                             foreach (Block item in BlocksProposed)
                             {
                                 if(item.Equals(receivedMessage.Content.Block)){
-                                    item.Set.Add(receivedMessage.Sender);
-                                    if(item.Set.Length > TotalNodes/2){
+                                    if(!item.Votesenders.Contains(receivedMessage.Sender))
+                                        item.Votesenders.Add(receivedMessage.Sender);
+                                    if(item.Votesenders.Count > TotalNodes/2  && !BlockChain.Contains(receivedMessage.Content.Block)){
                                         BlockChain.Add(receivedMessage.Content.Block);
                                         Console.WriteLine("Block Notarized: " + receivedMessage.Content.Block);
                                     }
@@ -188,7 +189,7 @@ internal class Program{
             Hash = ByteString.CopyFrom(new byte[] {0}),
             Epoch = 0,
             Length = 0,
-            Set = new HashSet<int>(),
+            Votesenders = {new List<int>()},
             //Notarized=false;
             Transactions = { new Transaction {
                 Sender = 0,
@@ -208,7 +209,7 @@ internal class Program{
                     Hash = ByteString.CopyFrom(hash), 
                     Epoch = epoch,
                     Length = length,
-                    Set = new HashSet<int>(),
+                    Votesenders = {new List<int>()},
                     Transactions = {transactions},
                 }
             },
@@ -266,17 +267,15 @@ internal class Program{
         return IDNode.Equals(Leader);
     }
 
-    /*public Block BlockToProposeAfter(){
+    public static int BlockToProposeAfter(){
         int aux=-1;
-        Block block;
         foreach (Block item in BlockChain)
         {
             if(item.Length > aux){
                 aux=item.Length;
-                block=item;
             } 
         }
-        return block;
-    } AFTER ALL THE LAST MIGHT WORK*/
+        return aux+1;
+    } 
     
 }
