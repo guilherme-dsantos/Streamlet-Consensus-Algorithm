@@ -24,18 +24,18 @@ public static partial class ProtoFileReflection {
         string.Concat(
           "ChBwcm90b19maWxlLnByb3RvIksKC1RyYW5zYWN0aW9uEg4KBnNlbmRlchgB",
           "IAEoBRIQCghyZWNlaXZlchgCIAEoBRIKCgJpZBgDIAEoBRIOCgZhbW91bnQY",
-          "BCABKAEibQoFQmxvY2sSDAoEaGFzaBgBIAEoDBINCgVlcG9jaBgCIAEoBRIO",
-          "CgZsZW5ndGgYAyABKAUSEwoLdm90ZXNlbmRlcnMYBCADKAUSIgoMdHJhbnNh",
-          "Y3Rpb25zGAUgAygLMgwuVHJhbnNhY3Rpb24iQQoHQ29udGVudBIOCgR0ZXh0",
-          "GAEgASgJSAASFwoFYmxvY2sYAiABKAsyBi5CbG9ja0gAQg0KC0NvbnRlbnRE",
-          "YXRhIlEKB01lc3NhZ2USGwoMbWVzc2FnZV90eXBlGAEgASgOMgUuVHlwZRIZ",
-          "Cgdjb250ZW50GAIgASgLMgguQ29udGVudBIOCgZzZW5kZXIYAyABKAUqJwoE",
-          "VHlwZRILCgdQcm9wb3NlEAASCAoEVm90ZRABEggKBEVjaG8QAmIGcHJvdG8z"));
+          "BCABKAEiWAoFQmxvY2sSDAoEaGFzaBgBIAEoDBINCgVlcG9jaBgCIAEoBRIO",
+          "CgZsZW5ndGgYAyABKAUSIgoMdHJhbnNhY3Rpb25zGAUgAygLMgwuVHJhbnNh",
+          "Y3Rpb24iQQoHQ29udGVudBIOCgR0ZXh0GAEgASgJSAASFwoFYmxvY2sYAiAB",
+          "KAsyBi5CbG9ja0gAQg0KC0NvbnRlbnREYXRhIlEKB01lc3NhZ2USGwoMbWVz",
+          "c2FnZV90eXBlGAEgASgOMgUuVHlwZRIZCgdjb250ZW50GAIgASgLMgguQ29u",
+          "dGVudBIOCgZzZW5kZXIYAyABKAUqJwoEVHlwZRILCgdQcm9wb3NlEAASCAoE",
+          "Vm90ZRABEggKBEVjaG8QAmIGcHJvdG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Type), }, null, new pbr::GeneratedClrTypeInfo[] {
           new pbr::GeneratedClrTypeInfo(typeof(global::Transaction), global::Transaction.Parser, new[]{ "Sender", "Receiver", "Id", "Amount" }, null, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Votesenders", "Transactions" }, null, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Transactions" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Content), global::Content.Parser, new[]{ "Text", "Block" }, new[]{ "ContentData" }, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Message), global::Message.Parser, new[]{ "MessageType", "Content", "Sender" }, null, null, null, null)
         }));
@@ -392,7 +392,6 @@ public sealed partial class Block : pb::IMessage<Block>
     hash_ = other.hash_;
     epoch_ = other.epoch_;
     length_ = other.length_;
-    votesenders_ = other.votesenders_.Clone();
     transactions_ = other.transactions_.Clone();
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
@@ -439,17 +438,6 @@ public sealed partial class Block : pb::IMessage<Block>
     }
   }
 
-  /// <summary>Field number for the "votesenders" field.</summary>
-  public const int VotesendersFieldNumber = 4;
-  private static readonly pb::FieldCodec<int> _repeated_votesenders_codec
-      = pb::FieldCodec.ForInt32(34);
-  private readonly pbc::RepeatedField<int> votesenders_ = new pbc::RepeatedField<int>();
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public pbc::RepeatedField<int> Votesenders {
-    get { return votesenders_; }
-  }
-
   /// <summary>Field number for the "transactions" field.</summary>
   public const int TransactionsFieldNumber = 5;
   private static readonly pb::FieldCodec<global::Transaction> _repeated_transactions_codec
@@ -479,7 +467,6 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Hash != other.Hash) return false;
     if (Epoch != other.Epoch) return false;
     if (Length != other.Length) return false;
-    if(!votesenders_.Equals(other.votesenders_)) return false;
     if(!transactions_.Equals(other.transactions_)) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
@@ -491,7 +478,6 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Hash.Length != 0) hash ^= Hash.GetHashCode();
     if (Epoch != 0) hash ^= Epoch.GetHashCode();
     if (Length != 0) hash ^= Length.GetHashCode();
-    hash ^= votesenders_.GetHashCode();
     hash ^= transactions_.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
@@ -523,7 +509,6 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(24);
       output.WriteInt32(Length);
     }
-    votesenders_.WriteTo(output, _repeated_votesenders_codec);
     transactions_.WriteTo(output, _repeated_transactions_codec);
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
@@ -547,7 +532,6 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(24);
       output.WriteInt32(Length);
     }
-    votesenders_.WriteTo(ref output, _repeated_votesenders_codec);
     transactions_.WriteTo(ref output, _repeated_transactions_codec);
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
@@ -568,7 +552,6 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Length != 0) {
       size += 1 + pb::CodedOutputStream.ComputeInt32Size(Length);
     }
-    size += votesenders_.CalculateSize(_repeated_votesenders_codec);
     size += transactions_.CalculateSize(_repeated_transactions_codec);
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -591,7 +574,6 @@ public sealed partial class Block : pb::IMessage<Block>
     if (other.Length != 0) {
       Length = other.Length;
     }
-    votesenders_.Add(other.votesenders_);
     transactions_.Add(other.transactions_);
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -618,11 +600,6 @@ public sealed partial class Block : pb::IMessage<Block>
         }
         case 24: {
           Length = input.ReadInt32();
-          break;
-        }
-        case 34:
-        case 32: {
-          votesenders_.AddEntriesFrom(input, _repeated_votesenders_codec);
           break;
         }
         case 42: {
@@ -654,11 +631,6 @@ public sealed partial class Block : pb::IMessage<Block>
         }
         case 24: {
           Length = input.ReadInt32();
-          break;
-        }
-        case 34:
-        case 32: {
-          votesenders_.AddEntriesFrom(ref input, _repeated_votesenders_codec);
           break;
         }
         case 42: {

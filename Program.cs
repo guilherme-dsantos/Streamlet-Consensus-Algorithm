@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Dynamic;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using Google.Protobuf;
@@ -13,11 +14,13 @@ internal class Program{
     public static List<Message> ReceivedMessages = new();
     public static string[] SelfAddress = new string[2];
 
-    public static List<Block> BlocksProposed = new();
+    //public static List<Block> BlocksProposed = new();
 
     public static int Epoch = 0;
     public static int DeltaEpoch = 5_000;
     public static List<Block> BlockChain = new();
+
+    public static Dictionary<Block, HashSet<int>> BlocksProposed_Votes = new Dictionary<Block, HashSet<int>>();
     
     public static readonly object MessageLock = new();
     public static readonly object WriteLock = new();
@@ -132,19 +135,19 @@ internal class Program{
                         if(!IsLeader() && receivedMessage.MessageType == Type.Propose) { //other nodes vote for proposed block
                             VoteBlock(receivedMessage);
                         }
-                        if(receivedMessage.MessageType == Type.Propose && !BlocksProposed.Contains(receivedMessage.Content.Block)){
-                            BlocksProposed.Add(receivedMessage.Content.Block);
+                        if(receivedMessage.MessageType == Type.Propose && !BlocksProposed_Votes.ContainsKey(receivedMessage.Content.Block)){
+                            BlocksProposed_Votes[receivedMessage.Content.Block] = new HashSet<int>();
+                            //BlocksProposed_Votes.Add(receivedMessage.Content.Block);
                         }
                         if(receivedMessage.MessageType == Type.Vote){
-                            if(!BlocksProposed.Contains(receivedMessage.Content.Block)){
-                                BlocksProposed.Add(receivedMessage.Content.Block);
+                            if(!BlocksProposed_Votes.ContainsKey(receivedMessage.Content.Block)){
+                                BlocksProposed_Votes[receivedMessage.Content.Block] = new HashSet<int>();
                             }
-                            foreach (Block item in BlocksProposed)
+                            foreach (var item in BlocksProposed_Votes)
                             {
-                                if(item.Equals(receivedMessage.Content.Block)){
-                                    if(!item.Votesenders.Contains(receivedMessage.Sender))
-                                        item.Votesenders.Add(receivedMessage.Sender);
-                                    if(item.Votesenders.Count > TotalNodes/2  && !BlockChain.Contains(receivedMessage.Content.Block)){
+                                if(item.Key.Equals(receivedMessage.Content.Block)){
+                                    item.Value.Add(receivedMessage.Sender);
+                                    if(item.Value.Count > TotalNodes/2  && !BlockChain.Contains(receivedMessage.Content.Block)){
                                         BlockChain.Add(receivedMessage.Content.Block);
                                         Console.WriteLine("Block Notarized: " + receivedMessage.Content.Block);
                                     }
@@ -189,14 +192,7 @@ internal class Program{
             Hash = ByteString.CopyFrom(new byte[] {0}),
             Epoch = 0,
             Length = 0,
-            Votesenders = {new List<int>()},
-            //Notarized=false;
-            Transactions = { new Transaction {
-                Sender = 0,
-                Receiver = 0,
-                Id = 0,
-                Amount = 0.0
-            }}
+            Transactions = {}
         };
         return block;
     }
@@ -209,7 +205,6 @@ internal class Program{
                     Hash = ByteString.CopyFrom(hash), 
                     Epoch = epoch,
                     Length = length,
-                    Votesenders = {new List<int>()},
                     Transactions = {transactions},
                 }
             },
