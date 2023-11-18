@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using Google.Protobuf;
@@ -17,8 +18,8 @@ internal class Program{
     // Consensus and Voting
     public static bool VotedInEpoch; // Nodes can only vote at most once on each epoch
     public static int Epoch = 0;
-    public static int DeltaEpoch = 5_000;
-    public static Block proposedBlock = new();
+    public static int DeltaEpoch = 10_000;
+    public static Block ProposedBlock = new();
 
     // Blockchain
     public static List<Block> BlockChain = new();
@@ -116,7 +117,7 @@ internal class Program{
         NetworkStream stream = client.GetStream();
         while (true) {
             
-            byte[] data = new byte[1024]; 
+            byte[] data = new byte[2048]; 
             int bytesRead = stream.Read(data, 0, data.Length);
             if (bytesRead == 0) {
                 continue;
@@ -126,30 +127,32 @@ internal class Program{
             if (receivedMessage != null) {
                 lock(MessageLock) {
                     if (!IsMessageReceived(receivedMessage)) {
-                        if(receivedMessage.MessageType == Type.Propose) {
-                            proposedBlock = receivedMessage.Content.Block;
-                            Interlocked.Exchange(ref Votes,0);
-                        }
                         ReceivedMessages.Add(receivedMessage);
-                        // Echo message to the other nodes
-                        Echo(receivedMessage);
-                        if(receivedMessage.Sender != IDNode && receivedMessage.MessageType == Type.Propose && !VotedInEpoch && IsBlockValid(receivedMessage)) { //other nodes vote for proposed block
-                            BroadcastVotes(receivedMessage);
-                            VotedInEpoch = true;
+                        Console.WriteLine($"Received message from {receivedMessage.Sender} with {receivedMessage.Content}");
+                        if(receivedMessage.MessageType == Type.Echo) {
+                            Echo(receivedMessage.Content.Message);
+                            Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content.Message.Content}");
+                        } else {
+                            Echo(receivedMessage);
+                            Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content}");
                         }
-                        if(receivedMessage.MessageType == Type.Vote && receivedMessage.Content.Block.Hash.Equals(proposedBlock.Hash)) {
-                            Interlocked.Increment(ref Votes);
-                            if(Votes > TotalNodes / 2) { //if all nodes voted, add block to blockchain
-                                BlockChain.Add(proposedBlock);
-                                CheckFinalizationCriteria();
-                                // Print epoch number and leader to console in blue every time a new epoch starts
-                                foreach(Block b in BlockChain) {
-                                    Console.WriteLine(b);
-                                }
-                                Console.WriteLine("--------------------");
-                                proposedBlock = new();
+                        /*if(receivedMessage.MessageType == Type.Propose || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Propose)) {
+                            ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
+                            Interlocked.Exchange(ref Votes,0);
+                            if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch && IsBlockValid(receivedMessage.Content.Message)) {
+                                BroadcastVotes(receivedMessage);
+                                VotedInEpoch = true;
                             }
                         }
+                        if(receivedMessage.MessageType == Type.Vote || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Vote)) {
+                            Interlocked.Increment(ref Votes);
+                            if(Votes < TotalNodes / 2) {
+                                BlockChain.Add(receivedMessage.Content.Block);
+                                CheckFinalizationCriteria();
+                                ProposedBlock = new();
+                            }
+                        }
+                        */
                     }
                 }
             }
@@ -160,13 +163,20 @@ internal class Program{
     public static void URB_Broadcast(Message message) {
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
-        // Send the serialized message
+        // Send the serialized message to myself
         MyselfStream?.Write(serializedMessage, 0, serializedMessage.Length);
     }
 
     public static void Echo(Message message) {
+        Message echoMessage = new() {
+            MessageType = Type.Echo,
+            Content = new Content { 
+                Message = message
+            },
+            Sender = IDNode
+        };
          // Serialize the message to bytes
-        byte[] serializedMessage = SerializeMessage(message);
+        byte[] serializedMessage = SerializeMessage(echoMessage);
         foreach (TcpClient otherClient in OtherAddresses) {
             NetworkStream otherStream = otherClient.GetStream();
             // Send only the relevant bytes received, not the entire buffer
@@ -211,8 +221,9 @@ internal class Program{
         }
     }
 
-    public static void BroadcastVotes(Message proposedBlock){
-        Block voteBlock = proposedBlock.Content.Block;
+    public static void BroadcastVotes(Message messageWithBlock){
+        Block voteBlock = messageWithBlock.Content.Message.Content.Block;
+        //Block voteBlock = proposedBlock.Content.Block;
         voteBlock.Transactions.Clear();
         Message voteMessage = new() {
             MessageType = Type.Vote,
@@ -226,13 +237,13 @@ internal class Program{
 
     public static bool IsBlockValid(Message message) {
         Block block = message.Content.Block;
-        byte[] hash = block.Hash.ToByteArray();
-        byte[] newHash = ComputeParentHash();
+        int maxId = BlockChain.Max(block => block.Epoch);
         if(block.Length <= PointerLastFinalized) {
             Console.WriteLine("Block length is not valid");
             return false;
         }
-        if (!hash.SequenceEqual(newHash)) {
+        if(block.Epoch <= maxId) {
+            Console.WriteLine("Block epoch is not valid");
             return false;
         }
         return true;
@@ -265,6 +276,12 @@ internal class Program{
     }
 
     public static bool IsMessageReceived(Message message) {
+        if(message.MessageType == Type.Propose || message.MessageType == Type.Vote) {
+            return ReceivedMessages.Contains(message);
+        }
+        if (message.MessageType == Type.Echo) {
+            return ReceivedMessages.Contains(message.Content.Message) || ReceivedMessages.Contains(message);
+        }
         return ReceivedMessages.Contains(message);
     }
 

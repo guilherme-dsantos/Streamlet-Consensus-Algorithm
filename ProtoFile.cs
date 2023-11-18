@@ -26,17 +26,17 @@ public static partial class ProtoFileReflection {
           "IAEoBRIQCghyZWNlaXZlchgCIAEoBRIKCgJpZBgDIAEoBRIOCgZhbW91bnQY",
           "BCABKAEiWAoFQmxvY2sSDAoEaGFzaBgBIAEoDBINCgVlcG9jaBgCIAEoBRIO",
           "CgZsZW5ndGgYAyABKAUSIgoMdHJhbnNhY3Rpb25zGAQgAygLMgwuVHJhbnNh",
-          "Y3Rpb24iQQoHQ29udGVudBIOCgR0ZXh0GAEgASgJSAASFwoFYmxvY2sYAiAB",
-          "KAsyBi5CbG9ja0gAQg0KC0NvbnRlbnREYXRhIlEKB01lc3NhZ2USGwoMbWVz",
-          "c2FnZV90eXBlGAEgASgOMgUuVHlwZRIZCgdjb250ZW50GAIgASgLMgguQ29u",
-          "dGVudBIOCgZzZW5kZXIYAyABKAUqJwoEVHlwZRILCgdQcm9wb3NlEAASCAoE",
-          "Vm90ZRABEggKBEVjaG8QAmIGcHJvdG8z"));
+          "Y3Rpb24iTgoHQ29udGVudBIbCgdtZXNzYWdlGAEgASgLMgguTWVzc2FnZUgA",
+          "EhcKBWJsb2NrGAIgASgLMgYuQmxvY2tIAEINCgtDb250ZW50RGF0YSJRCgdN",
+          "ZXNzYWdlEhsKDG1lc3NhZ2VfdHlwZRgBIAEoDjIFLlR5cGUSGQoHY29udGVu",
+          "dBgCIAEoCzIILkNvbnRlbnQSDgoGc2VuZGVyGAMgASgFKicKBFR5cGUSCwoH",
+          "UHJvcG9zZRAAEggKBFZvdGUQARIICgRFY2hvEAJiBnByb3RvMw=="));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Type), }, null, new pbr::GeneratedClrTypeInfo[] {
           new pbr::GeneratedClrTypeInfo(typeof(global::Transaction), global::Transaction.Parser, new[]{ "Sender", "Receiver", "Id", "Amount" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Transactions" }, null, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::Content), global::Content.Parser, new[]{ "Text", "Block" }, new[]{ "ContentData" }, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::Content), global::Content.Parser, new[]{ "Message", "Block" }, new[]{ "ContentData" }, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Message), global::Message.Parser, new[]{ "MessageType", "Content", "Sender" }, null, null, null, null)
         }));
   }
@@ -680,8 +680,8 @@ public sealed partial class Content : pb::IMessage<Content>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public Content(Content other) : this() {
     switch (other.ContentDataCase) {
-      case ContentDataOneofCase.Text:
-        Text = other.Text;
+      case ContentDataOneofCase.Message:
+        Message = other.Message.Clone();
         break;
       case ContentDataOneofCase.Block:
         Block = other.Block.Clone();
@@ -697,29 +697,15 @@ public sealed partial class Content : pb::IMessage<Content>
     return new Content(this);
   }
 
-  /// <summary>Field number for the "text" field.</summary>
-  public const int TextFieldNumber = 1;
+  /// <summary>Field number for the "message" field.</summary>
+  public const int MessageFieldNumber = 1;
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public string Text {
-    get { return HasText ? (string) contentData_ : ""; }
+  public global::Message Message {
+    get { return contentDataCase_ == ContentDataOneofCase.Message ? (global::Message) contentData_ : null; }
     set {
-      contentData_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      contentDataCase_ = ContentDataOneofCase.Text;
-    }
-  }
-  /// <summary>Gets whether the "text" field is set</summary>
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public bool HasText {
-    get { return contentDataCase_ == ContentDataOneofCase.Text; }
-  }
-  /// <summary> Clears the value of the oneof if it's currently set to "text" </summary>
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public void ClearText() {
-    if (HasText) {
-      ClearContentData();
+      contentData_ = value;
+      contentDataCase_ = value == null ? ContentDataOneofCase.None : ContentDataOneofCase.Message;
     }
   }
 
@@ -739,7 +725,7 @@ public sealed partial class Content : pb::IMessage<Content>
   /// <summary>Enum of possible cases for the "ContentData" oneof.</summary>
   public enum ContentDataOneofCase {
     None = 0,
-    Text = 1,
+    Message = 1,
     Block = 2,
   }
   private ContentDataOneofCase contentDataCase_ = ContentDataOneofCase.None;
@@ -771,7 +757,7 @@ public sealed partial class Content : pb::IMessage<Content>
     if (ReferenceEquals(other, this)) {
       return true;
     }
-    if (Text != other.Text) return false;
+    if (!object.Equals(Message, other.Message)) return false;
     if (!object.Equals(Block, other.Block)) return false;
     if (ContentDataCase != other.ContentDataCase) return false;
     return Equals(_unknownFields, other._unknownFields);
@@ -781,7 +767,7 @@ public sealed partial class Content : pb::IMessage<Content>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override int GetHashCode() {
     int hash = 1;
-    if (HasText) hash ^= Text.GetHashCode();
+    if (contentDataCase_ == ContentDataOneofCase.Message) hash ^= Message.GetHashCode();
     if (contentDataCase_ == ContentDataOneofCase.Block) hash ^= Block.GetHashCode();
     hash ^= (int) contentDataCase_;
     if (_unknownFields != null) {
@@ -802,9 +788,9 @@ public sealed partial class Content : pb::IMessage<Content>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     output.WriteRawMessage(this);
   #else
-    if (HasText) {
+    if (contentDataCase_ == ContentDataOneofCase.Message) {
       output.WriteRawTag(10);
-      output.WriteString(Text);
+      output.WriteMessage(Message);
     }
     if (contentDataCase_ == ContentDataOneofCase.Block) {
       output.WriteRawTag(18);
@@ -820,9 +806,9 @@ public sealed partial class Content : pb::IMessage<Content>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-    if (HasText) {
+    if (contentDataCase_ == ContentDataOneofCase.Message) {
       output.WriteRawTag(10);
-      output.WriteString(Text);
+      output.WriteMessage(Message);
     }
     if (contentDataCase_ == ContentDataOneofCase.Block) {
       output.WriteRawTag(18);
@@ -838,8 +824,8 @@ public sealed partial class Content : pb::IMessage<Content>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public int CalculateSize() {
     int size = 0;
-    if (HasText) {
-      size += 1 + pb::CodedOutputStream.ComputeStringSize(Text);
+    if (contentDataCase_ == ContentDataOneofCase.Message) {
+      size += 1 + pb::CodedOutputStream.ComputeMessageSize(Message);
     }
     if (contentDataCase_ == ContentDataOneofCase.Block) {
       size += 1 + pb::CodedOutputStream.ComputeMessageSize(Block);
@@ -857,8 +843,11 @@ public sealed partial class Content : pb::IMessage<Content>
       return;
     }
     switch (other.ContentDataCase) {
-      case ContentDataOneofCase.Text:
-        Text = other.Text;
+      case ContentDataOneofCase.Message:
+        if (Message == null) {
+          Message = new global::Message();
+        }
+        Message.MergeFrom(other.Message);
         break;
       case ContentDataOneofCase.Block:
         if (Block == null) {
@@ -884,7 +873,12 @@ public sealed partial class Content : pb::IMessage<Content>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
           break;
         case 10: {
-          Text = input.ReadString();
+          global::Message subBuilder = new global::Message();
+          if (contentDataCase_ == ContentDataOneofCase.Message) {
+            subBuilder.MergeFrom(Message);
+          }
+          input.ReadMessage(subBuilder);
+          Message = subBuilder;
           break;
         }
         case 18: {
@@ -912,7 +906,12 @@ public sealed partial class Content : pb::IMessage<Content>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
           break;
         case 10: {
-          Text = input.ReadString();
+          global::Message subBuilder = new global::Message();
+          if (contentDataCase_ == ContentDataOneofCase.Message) {
+            subBuilder.MergeFrom(Message);
+          }
+          input.ReadMessage(subBuilder);
+          Message = subBuilder;
           break;
         }
         case 18: {

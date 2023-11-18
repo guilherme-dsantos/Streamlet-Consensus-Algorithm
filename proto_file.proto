@@ -22,7 +22,7 @@ message Block {
 
 message Content {
   oneof ContentData {
-    string text = 1;
+    Message message = 1;
     Block block = 2;
   }
 }
