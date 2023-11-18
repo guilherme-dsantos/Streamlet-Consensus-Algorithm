@@ -26,7 +26,7 @@ internal class Program{
 
     // Thread Synchronization
     public static readonly object MessageLock = new();
-    public volatile static CountdownEvent cde = new(TotalNodes - 1);
+    public volatile static CountdownEvent cde = new(TotalNodes);
 
     // Leader Election
     public static int Leader;
@@ -72,6 +72,7 @@ internal class Program{
                 continue;
             }
             string others = File.ReadLines("ips.txt").Skip(i-1).Take(1).First();
+            Console.WriteLine($"Connecting to {others}");
             string[] addresses = others.Split(":");
             TcpClient client = new();
             client.Connect(IPAddress.Parse(addresses[0]), int.Parse(addresses[1]));
@@ -83,20 +84,34 @@ internal class Program{
         MyselfStream = myself.GetStream();
 
         // Wait for all nodes to be ready
-        cde.Wait();
-        while(true) {
-            VotedInEpoch = false; //Sets voted to false at the start of each epoch
-            ++Epoch;
-            // Generate random number with given seed
-            Leader = random.Next(TotalNodes) + 1;
+cde.Wait();
+while(true) {
+    ReceivedMessages.Clear();
+    //Console.WriteLine($"Epoch {Epoch} started");
+    VotedInEpoch = false; //Sets voted to false at the start of each epoch
+    ++Epoch;
+    // Generate random number with given seed
+    Leader = random.Next(TotalNodes) + 1;
 
-            //if leader, propose block
-            if(IsLeader()) { 
-                byte[] hash = ComputeParentHash();
-                ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1, new List<Transaction>());
-            }
-            Thread.Sleep(DeltaEpoch);
-        }
+    //if leader, propose block
+    if(IsLeader()) { 
+        byte[] hash = ComputeParentHash();
+        
+        List<Transaction> transactions = new();
+        Transaction myTransaction = new()
+        {
+            Sender = 123,
+            Receiver = 456,
+            Id = 789,
+            Amount = 5.75
+        };
+        transactions.Add(myTransaction);
+
+        ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1, transactions);
+    }
+    Thread.Sleep(DeltaEpoch);
+}
+
        
     }
 
@@ -127,16 +142,24 @@ internal class Program{
             if (receivedMessage != null) {
                 lock(MessageLock) {
                     if (!IsMessageReceived(receivedMessage)) {
-                        ReceivedMessages.Add(receivedMessage);
-                        Console.WriteLine($"Received message from {receivedMessage.Sender} with {receivedMessage.Content}");
+                        if(receivedMessage.MessageType == Type.Echo) {
+                            ReceivedMessages.Add(receivedMessage.Content.Message);
+                        }
+                        else {
+                            ReceivedMessages.Add(receivedMessage);
+                        }
+                        Thread.Sleep(100);
+                        //Console.WriteLine($"Received message {receivedMessage}");
                         if(receivedMessage.MessageType == Type.Echo) {
                             Echo(receivedMessage.Content.Message);
-                            Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content.Message.Content}");
+                            //Console.WriteLine($"Echoing echo message from {receivedMessage.Sender} with {receivedMessage.Content.Message.Content}");
                         } else {
+                            //Console.WriteLine($"Echoing no echo message from {receivedMessage.Sender} with {receivedMessage}");
                             Echo(receivedMessage);
-                            Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content}");
+                            //Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content}");
                         }
-                        /*if(receivedMessage.MessageType == Type.Propose || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Propose)) {
+
+                        if(receivedMessage.MessageType == Type.Propose || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Propose)) {
                             ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
                             Interlocked.Exchange(ref Votes,0);
                             if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch && IsBlockValid(receivedMessage.Content.Message)) {
@@ -144,15 +167,22 @@ internal class Program{
                                 VotedInEpoch = true;
                             }
                         }
+
                         if(receivedMessage.MessageType == Type.Vote || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Vote)) {
                             Interlocked.Increment(ref Votes);
-                            if(Votes < TotalNodes / 2) {
-                                BlockChain.Add(receivedMessage.Content.Block);
+                            if(Votes > TotalNodes / 2) {
+                                //Console.WriteLine($"Block {receivedMessage.Content.Block} has been finalized");
+                                //Console.Write(FindBlock(receivedMessage));
+                                BlockChain.Add(ProposedBlock);
+                                Interlocked.Exchange(ref Votes,0);
                                 CheckFinalizationCriteria();
                                 ProposedBlock = new();
+                                foreach(Block b in BlockChain) {
+                                    Console.WriteLine(b);
+                                }
                             }
                         }
-                        */
+                        
                     }
                 }
             }
@@ -195,19 +225,24 @@ internal class Program{
     }
 
     public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, List<Transaction> transactions){
-        Message messageWithBlock = new() {
-            MessageType = Type.Propose,
-            Content = new Content { 
-                Block = new Block {
-                    Hash = ByteString.CopyFrom(hash),
-                    Epoch = epoch,
-                    Length = length,
-                    Transactions = {transactions},
-                }
-            },
-            Sender = node_id
-        };
-        URB_Broadcast(messageWithBlock);
+       Message messageWithBlock = new()
+    {
+        MessageType = Type.Propose,
+        Content = new Content
+        {
+            Block = new Block
+            {
+                Hash = ByteString.CopyFrom(hash),
+                Epoch = epoch,
+                Length = length,
+                Transactions = { transactions } // Initialize as a new list
+            }
+        },
+        Sender = node_id
+    };
+
+    //Console.WriteLine($"Proposing block {messageWithBlock}");
+    URB_Broadcast(messageWithBlock);
     }
 
     public static void CheckFinalizationCriteria(){
@@ -224,7 +259,7 @@ internal class Program{
     public static void BroadcastVotes(Message messageWithBlock){
         Block voteBlock = messageWithBlock.Content.Message.Content.Block;
         //Block voteBlock = proposedBlock.Content.Block;
-        voteBlock.Transactions.Clear();
+        //voteBlock.Transactions.Clear();
         Message voteMessage = new() {
             MessageType = Type.Vote,
             Content = new Content { 
@@ -247,6 +282,16 @@ internal class Program{
             return false;
         }
         return true;
+    }
+
+    public static Block FindBlock(Message mensaje){
+        Message found = new();
+        if(mensaje.MessageType == Type.Echo) {
+            ReceivedMessages.Find(found => mensaje.Content.Message.Content.Block.Hash.Equals(found.Content.Block.Hash) && found.MessageType == Type.Propose);
+        } else {
+            ReceivedMessages.Find(found => mensaje.Content.Block.Hash.Equals(found.Content.Block.Hash) && found.MessageType == Type.Propose);
+        }
+        return found.Content.Block;
     }
 
     public static byte[] ComputeParentHash() {
@@ -275,15 +320,41 @@ internal class Program{
         }
     }
 
-    public static bool IsMessageReceived(Message message) {
-        if(message.MessageType == Type.Propose || message.MessageType == Type.Vote) {
-            return ReceivedMessages.Contains(message);
+    public static List<Transaction> RandomTransactionListGenerator(){
+
+        List<Transaction> transactions = new();
+        Random r = new();
+        for (int i = 0; i < r.NextInt64(6) + 1; i++){
+            Transaction t = new(){
+                Sender = r.Next(100),
+                Receiver=r.Next(100),
+                Id=r.Next(1000),
+                Amount=r.Next(100000)
+            };
+            transactions.Add(t);
         }
+
+        return transactions;
+    }
+    
+    public static bool IsMessageReceived(Message message) {
         if (message.MessageType == Type.Echo) {
             return ReceivedMessages.Contains(message.Content.Message) || ReceivedMessages.Contains(message);
         }
+
         return ReceivedMessages.Contains(message);
     }
+
+    public static bool ContentAlreadyReceived(Message content){
+        foreach (Message item in ReceivedMessages) {
+            if(item.MessageType==Type.Echo) {
+                if(item.Content.Message.Equals(content)) return true;
+            }
+        }
+        return false;
+    }
+
+
 
     public static bool IsLeader(){
         return IDNode.Equals(Leader);
