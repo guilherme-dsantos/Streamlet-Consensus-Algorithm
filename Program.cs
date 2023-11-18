@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -97,17 +97,9 @@ while(true) {
     if(IsLeader()) { 
         byte[] hash = ComputeParentHash();
         
-        List<Transaction> transactions = new();
-        Transaction myTransaction = new()
-        {
-            Sender = 123,
-            Receiver = 456,
-            Id = 789,
-            Amount = 5.75
-        };
-        transactions.Add(myTransaction);
+        
 
-        ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1, transactions);
+        ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1,GenerateTransactions());
     }
     Thread.Sleep(DeltaEpoch);
 }
@@ -224,7 +216,7 @@ while(true) {
         return block;
     }
 
-    public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, List<Transaction> transactions){
+    public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, string transactions){
        Message messageWithBlock = new()
     {
         MessageType = Type.Propose,
@@ -235,7 +227,7 @@ while(true) {
                 Hash = ByteString.CopyFrom(hash),
                 Epoch = epoch,
                 Length = length,
-                Transactions = { transactions } // Initialize as a new list
+                Transactions = transactions  // Initialize as a new list
             }
         },
         Sender = node_id
@@ -319,24 +311,7 @@ while(true) {
             return null;
         }
     }
-
-    public static List<Transaction> RandomTransactionListGenerator(){
-
-        List<Transaction> transactions = new();
-        Random r = new();
-        for (int i = 0; i < r.NextInt64(6) + 1; i++){
-            Transaction t = new(){
-                Sender = r.Next(100),
-                Receiver=r.Next(100),
-                Id=r.Next(1000),
-                Amount=r.Next(100000)
-            };
-            transactions.Add(t);
-        }
-
-        return transactions;
-    }
-    
+ 
     public static bool IsMessageReceived(Message message) {
         if (message.MessageType == Type.Echo) {
             return ReceivedMessages.Contains(message.Content.Message) || ReceivedMessages.Contains(message);
@@ -358,6 +333,52 @@ while(true) {
 
     public static bool IsLeader(){
         return IDNode.Equals(Leader);
+    }
+
+     /** Generate a random transaction in the format:
+        * TransactionType | AccountType | Currency | Amount
+        * Example: Purchase | Checking | USD | 123.45
+    */
+
+    public static string GenerateTransactions() {
+        int numberOfTransactions = new Random().Next(2, 5); 
+        string result = "";
+
+        for (int i = 0; i < numberOfTransactions; i++) {
+            string transaction = GenerateTransaction();
+            result += transaction + "\n";
+        }
+
+        return result.Trim(); // Remove the trailing newline
+    }
+
+   
+    public static string GenerateTransaction() {
+        string transactionType = GetRandomTransactionType();
+        string accountType = GetRandomAccountType();
+        string currency = GetRandomCurrency();
+        decimal amount = GetRandomAmount();
+
+        return $"{transactionType} | {accountType} | {currency} | {amount:F2}";
+    }
+
+    public static string GetRandomTransactionType(){
+        string[] transactionTypes = { "Purchase", "Deposit", "Withdrawal", "Transfer" };
+        return transactionTypes[new Random().Next(transactionTypes.Length)];
+    }
+
+    public static string GetRandomAccountType(){
+        string[] accountTypes = { "Savings", "Checking", "CreditCard" };
+        return accountTypes[new Random().Next(accountTypes.Length)];
+    }
+
+    public static string GetRandomCurrency(){
+        string[] currencies = { "USD", "EUR", "GBP" };
+        return currencies[new Random().Next(currencies.Length)];
+    }
+
+    public static decimal GetRandomAmount(){
+        return (decimal)new Random().Next(1, 10000) + (decimal)new Random().NextDouble();
     }
     
 }

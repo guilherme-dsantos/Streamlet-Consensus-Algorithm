@@ -22,19 +22,16 @@ public static partial class ProtoFileReflection {
   static ProtoFileReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "ChBwcm90b19maWxlLnByb3RvIksKC1RyYW5zYWN0aW9uEg4KBnNlbmRlchgB",
-          "IAEoBRIQCghyZWNlaXZlchgCIAEoBRIKCgJpZBgDIAEoBRIOCgZhbW91bnQY",
-          "BCABKAEiWAoFQmxvY2sSDAoEaGFzaBgBIAEoDBINCgVlcG9jaBgCIAEoBRIO",
-          "CgZsZW5ndGgYAyABKAUSIgoMdHJhbnNhY3Rpb25zGAQgAygLMgwuVHJhbnNh",
-          "Y3Rpb24iTgoHQ29udGVudBIbCgdtZXNzYWdlGAEgASgLMgguTWVzc2FnZUgA",
-          "EhcKBWJsb2NrGAIgASgLMgYuQmxvY2tIAEINCgtDb250ZW50RGF0YSJRCgdN",
-          "ZXNzYWdlEhsKDG1lc3NhZ2VfdHlwZRgBIAEoDjIFLlR5cGUSGQoHY29udGVu",
-          "dBgCIAEoCzIILkNvbnRlbnQSDgoGc2VuZGVyGAMgASgFKicKBFR5cGUSCwoH",
-          "UHJvcG9zZRAAEggKBFZvdGUQARIICgRFY2hvEAJiBnByb3RvMw=="));
+          "ChBwcm90b19maWxlLnByb3RvIkoKBUJsb2NrEgwKBGhhc2gYASABKAwSDQoF",
+          "ZXBvY2gYAiABKAUSDgoGbGVuZ3RoGAMgASgFEhQKDHRyYW5zYWN0aW9ucxgE",
+          "IAEoCSJOCgdDb250ZW50EhsKB21lc3NhZ2UYASABKAsyCC5NZXNzYWdlSAAS",
+          "FwoFYmxvY2sYAiABKAsyBi5CbG9ja0gAQg0KC0NvbnRlbnREYXRhIlEKB01l",
+          "c3NhZ2USGwoMbWVzc2FnZV90eXBlGAEgASgOMgUuVHlwZRIZCgdjb250ZW50",
+          "GAIgASgLMgguQ29udGVudBIOCgZzZW5kZXIYAyABKAUqJwoEVHlwZRILCgdQ",
+          "cm9wb3NlEAASCAoEVm90ZRABEggKBEVjaG8QAmIGcHJvdG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Type), }, null, new pbr::GeneratedClrTypeInfo[] {
-          new pbr::GeneratedClrTypeInfo(typeof(global::Transaction), global::Transaction.Parser, new[]{ "Sender", "Receiver", "Id", "Amount" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Transactions" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Content), global::Content.Parser, new[]{ "Message", "Block" }, new[]{ "ContentData" }, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Message), global::Message.Parser, new[]{ "MessageType", "Content", "Sender" }, null, null, null, null)
@@ -54,307 +51,6 @@ public enum Type {
 
 #region Messages
 [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
-public sealed partial class Transaction : pb::IMessage<Transaction>
-#if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    , pb::IBufferMessage
-#endif
-{
-  private static readonly pb::MessageParser<Transaction> _parser = new pb::MessageParser<Transaction>(() => new Transaction());
-  private pb::UnknownFieldSet _unknownFields;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public static pb::MessageParser<Transaction> Parser { get { return _parser; } }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public static pbr::MessageDescriptor Descriptor {
-    get { return global::ProtoFileReflection.Descriptor.MessageTypes[0]; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  pbr::MessageDescriptor pb::IMessage.Descriptor {
-    get { return Descriptor; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public Transaction() {
-    OnConstruction();
-  }
-
-  partial void OnConstruction();
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public Transaction(Transaction other) : this() {
-    sender_ = other.sender_;
-    receiver_ = other.receiver_;
-    id_ = other.id_;
-    amount_ = other.amount_;
-    _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public Transaction Clone() {
-    return new Transaction(this);
-  }
-
-  /// <summary>Field number for the "sender" field.</summary>
-  public const int SenderFieldNumber = 1;
-  private int sender_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public int Sender {
-    get { return sender_; }
-    set {
-      sender_ = value;
-    }
-  }
-
-  /// <summary>Field number for the "receiver" field.</summary>
-  public const int ReceiverFieldNumber = 2;
-  private int receiver_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public int Receiver {
-    get { return receiver_; }
-    set {
-      receiver_ = value;
-    }
-  }
-
-  /// <summary>Field number for the "id" field.</summary>
-  public const int IdFieldNumber = 3;
-  private int id_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public int Id {
-    get { return id_; }
-    set {
-      id_ = value;
-    }
-  }
-
-  /// <summary>Field number for the "amount" field.</summary>
-  public const int AmountFieldNumber = 4;
-  private double amount_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public double Amount {
-    get { return amount_; }
-    set {
-      amount_ = value;
-    }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public override bool Equals(object other) {
-    return Equals(other as Transaction);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public bool Equals(Transaction other) {
-    if (ReferenceEquals(other, null)) {
-      return false;
-    }
-    if (ReferenceEquals(other, this)) {
-      return true;
-    }
-    if (Sender != other.Sender) return false;
-    if (Receiver != other.Receiver) return false;
-    if (Id != other.Id) return false;
-    if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Amount, other.Amount)) return false;
-    return Equals(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public override int GetHashCode() {
-    int hash = 1;
-    if (Sender != 0) hash ^= Sender.GetHashCode();
-    if (Receiver != 0) hash ^= Receiver.GetHashCode();
-    if (Id != 0) hash ^= Id.GetHashCode();
-    if (Amount != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Amount);
-    if (_unknownFields != null) {
-      hash ^= _unknownFields.GetHashCode();
-    }
-    return hash;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public override string ToString() {
-    return pb::JsonFormatter.ToDiagnosticString(this);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public void WriteTo(pb::CodedOutputStream output) {
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    output.WriteRawMessage(this);
-  #else
-    if (Sender != 0) {
-      output.WriteRawTag(8);
-      output.WriteInt32(Sender);
-    }
-    if (Receiver != 0) {
-      output.WriteRawTag(16);
-      output.WriteInt32(Receiver);
-    }
-    if (Id != 0) {
-      output.WriteRawTag(24);
-      output.WriteInt32(Id);
-    }
-    if (Amount != 0D) {
-      output.WriteRawTag(33);
-      output.WriteDouble(Amount);
-    }
-    if (_unknownFields != null) {
-      _unknownFields.WriteTo(output);
-    }
-  #endif
-  }
-
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-    if (Sender != 0) {
-      output.WriteRawTag(8);
-      output.WriteInt32(Sender);
-    }
-    if (Receiver != 0) {
-      output.WriteRawTag(16);
-      output.WriteInt32(Receiver);
-    }
-    if (Id != 0) {
-      output.WriteRawTag(24);
-      output.WriteInt32(Id);
-    }
-    if (Amount != 0D) {
-      output.WriteRawTag(33);
-      output.WriteDouble(Amount);
-    }
-    if (_unknownFields != null) {
-      _unknownFields.WriteTo(ref output);
-    }
-  }
-  #endif
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public int CalculateSize() {
-    int size = 0;
-    if (Sender != 0) {
-      size += 1 + pb::CodedOutputStream.ComputeInt32Size(Sender);
-    }
-    if (Receiver != 0) {
-      size += 1 + pb::CodedOutputStream.ComputeInt32Size(Receiver);
-    }
-    if (Id != 0) {
-      size += 1 + pb::CodedOutputStream.ComputeInt32Size(Id);
-    }
-    if (Amount != 0D) {
-      size += 1 + 8;
-    }
-    if (_unknownFields != null) {
-      size += _unknownFields.CalculateSize();
-    }
-    return size;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public void MergeFrom(Transaction other) {
-    if (other == null) {
-      return;
-    }
-    if (other.Sender != 0) {
-      Sender = other.Sender;
-    }
-    if (other.Receiver != 0) {
-      Receiver = other.Receiver;
-    }
-    if (other.Id != 0) {
-      Id = other.Id;
-    }
-    if (other.Amount != 0D) {
-      Amount = other.Amount;
-    }
-    _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public void MergeFrom(pb::CodedInputStream input) {
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    input.ReadRawMessage(this);
-  #else
-    uint tag;
-    while ((tag = input.ReadTag()) != 0) {
-      switch(tag) {
-        default:
-          _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-          break;
-        case 8: {
-          Sender = input.ReadInt32();
-          break;
-        }
-        case 16: {
-          Receiver = input.ReadInt32();
-          break;
-        }
-        case 24: {
-          Id = input.ReadInt32();
-          break;
-        }
-        case 33: {
-          Amount = input.ReadDouble();
-          break;
-        }
-      }
-    }
-  #endif
-  }
-
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-    uint tag;
-    while ((tag = input.ReadTag()) != 0) {
-      switch(tag) {
-        default:
-          _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-          break;
-        case 8: {
-          Sender = input.ReadInt32();
-          break;
-        }
-        case 16: {
-          Receiver = input.ReadInt32();
-          break;
-        }
-        case 24: {
-          Id = input.ReadInt32();
-          break;
-        }
-        case 33: {
-          Amount = input.ReadDouble();
-          break;
-        }
-      }
-    }
-  }
-  #endif
-
-}
-
-[global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
 public sealed partial class Block : pb::IMessage<Block>
 #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     , pb::IBufferMessage
@@ -369,7 +65,7 @@ public sealed partial class Block : pb::IMessage<Block>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public static pbr::MessageDescriptor Descriptor {
-    get { return global::ProtoFileReflection.Descriptor.MessageTypes[1]; }
+    get { return global::ProtoFileReflection.Descriptor.MessageTypes[0]; }
   }
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -392,7 +88,7 @@ public sealed partial class Block : pb::IMessage<Block>
     hash_ = other.hash_;
     epoch_ = other.epoch_;
     length_ = other.length_;
-    transactions_ = other.transactions_.Clone();
+    transactions_ = other.transactions_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -440,13 +136,14 @@ public sealed partial class Block : pb::IMessage<Block>
 
   /// <summary>Field number for the "transactions" field.</summary>
   public const int TransactionsFieldNumber = 4;
-  private static readonly pb::FieldCodec<global::Transaction> _repeated_transactions_codec
-      = pb::FieldCodec.ForMessage(34, global::Transaction.Parser);
-  private readonly pbc::RepeatedField<global::Transaction> transactions_ = new pbc::RepeatedField<global::Transaction>();
+  private string transactions_ = "";
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public pbc::RepeatedField<global::Transaction> Transactions {
+  public string Transactions {
     get { return transactions_; }
+    set {
+      transactions_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+    }
   }
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -467,7 +164,7 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Hash != other.Hash) return false;
     if (Epoch != other.Epoch) return false;
     if (Length != other.Length) return false;
-    if(!transactions_.Equals(other.transactions_)) return false;
+    if (Transactions != other.Transactions) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -478,7 +175,7 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Hash.Length != 0) hash ^= Hash.GetHashCode();
     if (Epoch != 0) hash ^= Epoch.GetHashCode();
     if (Length != 0) hash ^= Length.GetHashCode();
-    hash ^= transactions_.GetHashCode();
+    if (Transactions.Length != 0) hash ^= Transactions.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -509,7 +206,10 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(24);
       output.WriteInt32(Length);
     }
-    transactions_.WriteTo(output, _repeated_transactions_codec);
+    if (Transactions.Length != 0) {
+      output.WriteRawTag(34);
+      output.WriteString(Transactions);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
     }
@@ -532,7 +232,10 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(24);
       output.WriteInt32(Length);
     }
-    transactions_.WriteTo(ref output, _repeated_transactions_codec);
+    if (Transactions.Length != 0) {
+      output.WriteRawTag(34);
+      output.WriteString(Transactions);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
     }
@@ -552,7 +255,9 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Length != 0) {
       size += 1 + pb::CodedOutputStream.ComputeInt32Size(Length);
     }
-    size += transactions_.CalculateSize(_repeated_transactions_codec);
+    if (Transactions.Length != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeStringSize(Transactions);
+    }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
     }
@@ -574,7 +279,9 @@ public sealed partial class Block : pb::IMessage<Block>
     if (other.Length != 0) {
       Length = other.Length;
     }
-    transactions_.Add(other.transactions_);
+    if (other.Transactions.Length != 0) {
+      Transactions = other.Transactions;
+    }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
 
@@ -603,7 +310,7 @@ public sealed partial class Block : pb::IMessage<Block>
           break;
         }
         case 34: {
-          transactions_.AddEntriesFrom(input, _repeated_transactions_codec);
+          Transactions = input.ReadString();
           break;
         }
       }
@@ -634,7 +341,7 @@ public sealed partial class Block : pb::IMessage<Block>
           break;
         }
         case 34: {
-          transactions_.AddEntriesFrom(ref input, _repeated_transactions_codec);
+          Transactions = input.ReadString();
           break;
         }
       }
@@ -659,7 +366,7 @@ public sealed partial class Content : pb::IMessage<Content>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public static pbr::MessageDescriptor Descriptor {
-    get { return global::ProtoFileReflection.Descriptor.MessageTypes[2]; }
+    get { return global::ProtoFileReflection.Descriptor.MessageTypes[1]; }
   }
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -945,7 +652,7 @@ public sealed partial class Message : pb::IMessage<Message>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public static pbr::MessageDescriptor Descriptor {
-    get { return global::ProtoFileReflection.Descriptor.MessageTypes[3]; }
+    get { return global::ProtoFileReflection.Descriptor.MessageTypes[2]; }
   }
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

@@ -6,18 +6,11 @@ enum Type {
   Echo = 2;
 }
 
-message Transaction {
-  int32 sender = 1;
-  int32 receiver = 2;
-  int32 id = 3;
-  double amount = 4;
-}
-
 message Block {
   bytes hash = 1;
   int32 epoch = 2;
   int32 length = 3;
-  repeated Transaction transactions = 4;
+  string transactions = 4;
 }
 
 message Content {
