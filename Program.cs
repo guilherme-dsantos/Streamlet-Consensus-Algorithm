@@ -7,7 +7,7 @@ using Google.Protobuf;
 internal class Program{
 
     // Network Configuration
-    public const int TotalNodes = 5;
+    public static int TotalNodes = File.ReadLines("ips.txt").Count();
     public static int IDNode;
     public static List<TcpClient> OtherAddresses = new();
     public static List<Message> ReceivedMessages = new();
@@ -48,9 +48,9 @@ internal class Program{
         }
 
         IDNode = int.Parse(args[0]);
-        //Console.WriteLine($"Node ID: {IdNode}");
+        
+        // Reads the corresponding address from the ips.txt file
         string address_from_file = File.ReadLines("ips.txt").Skip(IDNode-1).Take(1).First();  
-         // Create a Random object with the seed "42"
 
         //Genesis block
         BlockChain.Add(InitBlock());
@@ -72,39 +72,36 @@ internal class Program{
                 continue;
             }
             string others = File.ReadLines("ips.txt").Skip(i-1).Take(1).First();
-            Console.WriteLine($"Connecting to {others}");
             string[] addresses = others.Split(":");
             TcpClient client = new();
             client.Connect(IPAddress.Parse(addresses[0]), int.Parse(addresses[1]));
             OtherAddresses.Add(client);
         }
 
+        // Connect to myself so I can URB_Broadcast to myself
         TcpClient myself = new();
         myself.Connect(IPAddress.Parse(SelfAddress[0]), int.Parse(SelfAddress[1]));
         MyselfStream = myself.GetStream();
 
         // Wait for all nodes to be ready
-cde.Wait();
-while(true) {
-    ReceivedMessages.Clear();
-    //Console.WriteLine($"Epoch {Epoch} started");
-    VotedInEpoch = false; //Sets voted to false at the start of each epoch
-    ++Epoch;
-    // Generate random number with given seed
-    Leader = random.Next(TotalNodes) + 1;
+        cde.Wait();
+        while(true) {
+            //Clears received messages at the start of each epoch for performance reasons
+            ReceivedMessages.Clear();
+            //Sets voted to false at the start of each epoch
+            VotedInEpoch = false; 
+            ++Epoch;
+            // Generate random number with given seed
+            Leader = random.Next(TotalNodes) + 1;
 
-    //if leader, propose block
-    if(IsLeader()) { 
-        byte[] hash = ComputeParentHash();
-        
-        
+            // If I am the leader, propose a block
+            if(IsLeader()) { 
+                byte[] hash = ComputeParentHash();
+                ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1,GenerateTransactions());
+            }
+            Thread.Sleep(DeltaEpoch);
+        }
 
-        ProposeBlock(IDNode, hash, Epoch, BlockChain.Last().Length + 1,GenerateTransactions());
-    }
-    Thread.Sleep(DeltaEpoch);
-}
-
-       
     }
 
     static void StartListener(TcpListener listener) {
@@ -134,24 +131,10 @@ while(true) {
             if (receivedMessage != null) {
                 lock(MessageLock) {
                     if (!IsMessageReceived(receivedMessage)) {
-                        if(receivedMessage.MessageType == Type.Echo) {
-                            ReceivedMessages.Add(receivedMessage.Content.Message);
-                        }
-                        else {
-                            ReceivedMessages.Add(receivedMessage);
-                        }
+                        AddMessage(receivedMessage);
                         Thread.Sleep(100);
-                        //Console.WriteLine($"Received message {receivedMessage}");
-                        if(receivedMessage.MessageType == Type.Echo) {
-                            Echo(receivedMessage.Content.Message);
-                            //Console.WriteLine($"Echoing echo message from {receivedMessage.Sender} with {receivedMessage.Content.Message.Content}");
-                        } else {
-                            //Console.WriteLine($"Echoing no echo message from {receivedMessage.Sender} with {receivedMessage}");
-                            Echo(receivedMessage);
-                            //Console.WriteLine($"Echoing message from {receivedMessage.Sender} with {receivedMessage.Content}");
-                        }
-
-                        if(receivedMessage.MessageType == Type.Propose || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Propose)) {
+                        HandleEcho(receivedMessage);
+                        if(IsProposeOrEchoPropose(receivedMessage)) {
                             ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
                             Interlocked.Exchange(ref Votes,0);
                             if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch && IsBlockValid(receivedMessage.Content.Message)) {
@@ -159,36 +142,37 @@ while(true) {
                                 VotedInEpoch = true;
                             }
                         }
-
-                        if(receivedMessage.MessageType == Type.Vote || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Vote)) {
+                        if(IsVoteOrEchoVote(receivedMessage)) {
                             Interlocked.Increment(ref Votes);
                             if(Votes > TotalNodes / 2) {
-                                //Console.WriteLine($"Block {receivedMessage.Content.Block} has been finalized");
-                                //Console.Write(FindBlock(receivedMessage));
                                 BlockChain.Add(ProposedBlock);
                                 Interlocked.Exchange(ref Votes,0);
                                 CheckFinalizationCriteria();
                                 ProposedBlock = new();
+                                Console.WriteLine("====={Blockchain}=====");
                                 foreach(Block b in BlockChain) {
                                     Console.WriteLine(b);
                                 }
                             }
-                        }
-                        
+                        } 
                     }
                 }
             }
         }
     }
 
-
+    /**
+        * Function to broadcast a message
+        */
     public static void URB_Broadcast(Message message) {
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
         // Send the serialized message to myself
         MyselfStream?.Write(serializedMessage, 0, serializedMessage.Length);
     }
-
+    /**
+        * Function to echo a message
+        */
     public static void Echo(Message message) {
         Message echoMessage = new() {
             MessageType = Type.Echo,
@@ -205,7 +189,9 @@ while(true) {
             otherStream.Write(serializedMessage, 0, serializedMessage.Length);
         }
     }
-
+    /**
+        * Function to initialize the genesis block
+        */
     public static Block InitBlock() {
         Block block = new() {
             Hash = ByteString.CopyFrom(new byte[] {0}),
@@ -215,7 +201,9 @@ while(true) {
         };
         return block;
     }
-
+    /**
+        * Function to propose a block
+        */
     public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, string transactions){
        Message messageWithBlock = new()
     {
@@ -233,10 +221,59 @@ while(true) {
         Sender = node_id
     };
 
-    //Console.WriteLine($"Proposing block {messageWithBlock}");
-    URB_Broadcast(messageWithBlock);
+        URB_Broadcast(messageWithBlock);
     }
-
+    /**
+        * Function to add a message to the list of received messages
+        */
+    public static void AddMessage(Message receivedMessage) {
+        lock(MessageLock) {
+            if (receivedMessage.MessageType == Type.Echo) {
+            ReceivedMessages.Add(receivedMessage.Content.Message);
+            } else {
+             ReceivedMessages.Add(receivedMessage);
+            }
+        }
+    }
+    /**
+        * Function to handle the echo message
+        */
+    public static void HandleEcho(Message receivedMessage){
+        lock(MessageLock) {
+            if(receivedMessage.MessageType == Type.Echo) {
+                Echo(receivedMessage.Content.Message);
+            } else {
+                Echo(receivedMessage);
+            }
+        }
+    }
+    /**
+        * Function to check if the message is a propose or an echo propose
+        */
+    public static bool IsProposeOrEchoPropose(Message receivedMessage) {
+        lock(MessageLock){
+            if(receivedMessage.MessageType == Type.Propose || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Propose)) {
+                return true;
+            }
+                return false;
+        }
+        
+    }
+    /**
+        * Function to check if the message is a vote or an echo vote
+        */
+    public static bool IsVoteOrEchoVote(Message receivedMessage) {
+        lock(MessageLock) {
+            if(receivedMessage.MessageType == Type.Vote || (receivedMessage.MessageType == Type.Echo && receivedMessage.Content.Message.MessageType == Type.Vote)) {
+                return true;
+            }
+                return false;
+        }
+        
+    }
+    /**
+        * Function to check if the finalization criteria is met
+        */
     public static void CheckFinalizationCriteria(){
         if(BlockChain.Count < 3) {
             return;
@@ -247,11 +284,12 @@ while(true) {
             PointerLastFinalized = lastBlocks[1].Length;
         }
     }
-
+    /**
+        * Function to broadcast votes
+        */
     public static void BroadcastVotes(Message messageWithBlock){
         Block voteBlock = messageWithBlock.Content.Message.Content.Block;
-        //Block voteBlock = proposedBlock.Content.Block;
-        //voteBlock.Transactions.Clear();
+        voteBlock.Transactions = "0";
         Message voteMessage = new() {
             MessageType = Type.Vote,
             Content = new Content { 
@@ -261,31 +299,28 @@ while(true) {
         };
         URB_Broadcast(voteMessage);
     }
-
+    /**
+        * Function to check if a block is valid
+        */
     public static bool IsBlockValid(Message message) {
-        Block block = message.Content.Block;
-        int maxId = BlockChain.Max(block => block.Epoch);
-        if(block.Length <= PointerLastFinalized) {
-            Console.WriteLine("Block length is not valid");
-            return false;
+        lock(MessageLock) {
+            Block block = message.Content.Block;
+            int maxId = BlockChain.Max(block => block.Epoch);
+            if(block.Length <= PointerLastFinalized) {
+                Console.WriteLine("Block length is not valid");
+                return false;
+            }
+            if(block.Epoch <= maxId) {
+                Console.WriteLine("Block epoch is not valid");
+                return false;
+            }
+            return true;
         }
-        if(block.Epoch <= maxId) {
-            Console.WriteLine("Block epoch is not valid");
-            return false;
-        }
-        return true;
+        
     }
-
-    public static Block FindBlock(Message mensaje){
-        Message found = new();
-        if(mensaje.MessageType == Type.Echo) {
-            ReceivedMessages.Find(found => mensaje.Content.Message.Content.Block.Hash.Equals(found.Content.Block.Hash) && found.MessageType == Type.Propose);
-        } else {
-            ReceivedMessages.Find(found => mensaje.Content.Block.Hash.Equals(found.Content.Block.Hash) && found.MessageType == Type.Propose);
-        }
-        return found.Content.Block;
-    }
-
+    /**
+        * Function to compute the hash of the last block in the blockchain
+        */
     public static byte[] ComputeParentHash() {
         Block lastBlock = BlockChain.Last();
         byte[] hash = lastBlock.Hash.ToByteArray();
@@ -293,14 +328,19 @@ while(true) {
         return newHash;
     }
 
-    // Function to serialize a Message object into bytes
+    /**
+        * Function to serialize a Message object into a byte array
+        */
     public static byte[] SerializeMessage(Message message) {
         using MemoryStream stream = new();
         message.WriteTo(stream);
         return stream.ToArray();
     }
 
-    // Function to deserialize bytes into a Message object
+   /**
+        * Function to deserialize a byte array into a Message object
+        * Returns null if the deserialization fails
+        */
     public static Message? DeserializeMessage(byte[] data, int length) {
         try {
             Message message = new();
@@ -311,26 +351,20 @@ while(true) {
             return null;
         }
     }
- 
+    /**
+        * Returns true if the message has already been received
+        */  
     public static bool IsMessageReceived(Message message) {
-        if (message.MessageType == Type.Echo) {
+        lock(MessageLock) {
+            if (message.MessageType == Type.Echo) {
             return ReceivedMessages.Contains(message.Content.Message) || ReceivedMessages.Contains(message);
         }
-
         return ReceivedMessages.Contains(message);
+        } 
     }
-
-    public static bool ContentAlreadyReceived(Message content){
-        foreach (Message item in ReceivedMessages) {
-            if(item.MessageType==Type.Echo) {
-                if(item.Content.Message.Equals(content)) return true;
-            }
-        }
-        return false;
-    }
-
-
-
+    /**
+        * Returns true if the node is the leader of the current epoch
+        */
     public static bool IsLeader(){
         return IDNode.Equals(Leader);
     }
@@ -346,10 +380,10 @@ while(true) {
 
         for (int i = 0; i < numberOfTransactions; i++) {
             string transaction = GenerateTransaction();
-            result += transaction + "\n";
+            result += transaction + " || ";
         }
 
-        return result.Trim(); // Remove the trailing newline
+        return result.Trim();
     }
 
    
