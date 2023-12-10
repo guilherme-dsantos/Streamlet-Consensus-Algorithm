@@ -1,0 +1,5 @@
+Block Epoch: 0 Lenght: 0 Transaction: 
+Block Epoch: 1 Lenght: 1 Transaction: Deposit | CreditCard | EUR | 5341,42 || Deposit | CreditCard | GBP | 7516,79 || Deposit | Checking | EUR | 4154,78 || Purchase | Savings | EUR | 5998,15 ||
+Block Epoch: 2 Lenght: 2 Transaction: Purchase | CreditCard | GBP | 9907,39 || Withdrawal | Savings | EUR | 6069,42 ||
+Block Epoch: 3 Lenght: 3 Transaction: Deposit | Savings | GBP | 3310,28 || Deposit | Savings | GBP | 1461,61 || Transfer | Savings | EUR | 5771,93 ||
+Block Epoch: 4 Lenght: 4 Transaction: Transfer | Checking | EUR | 3876,03 || Purchase | Checking | EUR | 2599,76 || Purchase | Checking | GBP | 3824,74 ||

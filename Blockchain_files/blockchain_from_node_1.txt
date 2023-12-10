@@ -1,0 +1,18 @@
+Block Epoch: 0 Lenght: 0 Transaction: 
+Block Epoch: 1 Lenght: 1 Transaction: Deposit | CreditCard | EUR | 5341,42 || Deposit | CreditCard | GBP | 7516,79 || Deposit | Checking | EUR | 4154,78 || Purchase | Savings | EUR | 5998,15 ||
+Block Epoch: 2 Lenght: 2 Transaction: Purchase | CreditCard | GBP | 9907,39 || Withdrawal | Savings | EUR | 6069,42 ||
+Block Epoch: 3 Lenght: 3 Transaction: Deposit | Savings | GBP | 3310,28 || Deposit | Savings | GBP | 1461,61 || Transfer | Savings | EUR | 5771,93 ||
+Block Epoch: 4 Lenght: 4 Transaction: Transfer | Checking | EUR | 3876,03 || Purchase | Checking | EUR | 2599,76 || Purchase | Checking | GBP | 3824,74 ||
+Block Epoch: 5 Lenght: 5 Transaction: Transfer | CreditCard | EUR | 724,03 || Withdrawal | Checking | USD | 6340,60 || Transfer | Checking | GBP | 441,39 || Transfer | Savings | USD | 7364,84 ||
+Block Epoch: 6 Lenght: 6 Transaction: Deposit | CreditCard | EUR | 4479,97 || Purchase | Checking | EUR | 7864,30 ||
+Block Epoch: 7 Lenght: 7 Transaction: Purchase | Checking | USD | 583,64 || Deposit | CreditCard | EUR | 3262,15 || Withdrawal | Checking | GBP | 5127,53 ||
+Block Epoch: 8 Lenght: 8 Transaction: Withdrawal | Checking | GBP | 2283,18 || Transfer | Savings | EUR | 4334,99 || Transfer | Checking | GBP | 9375,79 || Purchase | Checking | EUR | 5752,67 ||
+Block Epoch: 9 Lenght: 9 Transaction: Purchase | Savings | USD | 4711,60 || Deposit | Checking | GBP | 6386,47 || Deposit | Savings | USD | 1171,85 ||
+Block Epoch: 10 Lenght: 10 Transaction: Purchase | Savings | GBP | 3675,80 || Deposit | Savings | GBP | 2143,43 || Withdrawal | Checking | GBP | 476,92 || Deposit | Checking | EUR | 3528,42 ||
+Block Epoch: 11 Lenght: 11 Transaction: Withdrawal | Savings | EUR | 9654,91 || Deposit | Savings | GBP | 8532,98 ||
+Block Epoch: 12 Lenght: 12 Transaction: Purchase | Savings | GBP | 5299,18 || Withdrawal | CreditCard | GBP | 7688,08 || Transfer | Savings | USD | 3371,52 ||
+Block Epoch: 13 Lenght: 13 Transaction: Purchase | Checking | GBP | 7493,24 || Transfer | Checking | EUR | 4724,35 || Deposit | CreditCard | EUR | 375,42 || Deposit | Checking | EUR | 5450,03 ||
+Block Epoch: 20 Lenght: 17 Transaction: Purchase | Checking | GBP | 4054,95 || Transfer | Checking | USD | 6736,60 ||
+Block Epoch: 21 Lenght: 18 Transaction: Deposit | Checking | USD | 8434,94 || Transfer | Checking | GBP | 2996,63 || Transfer | Checking | USD | 9015,98 ||
+Block Epoch: 22 Lenght: 19 Transaction: Withdrawal | Savings | EUR | 7290,66 || Withdrawal | Checking | EUR | 9958,83 || Purchase | Savings | USD | 6254,28 ||
+Block Epoch: 23 Lenght: 20 Transaction: Purchase | Savings | EUR | 1093,90 || Transfer | Savings | GBP | 7368,41 || Withdrawal | CreditCard | USD | 584,51 ||

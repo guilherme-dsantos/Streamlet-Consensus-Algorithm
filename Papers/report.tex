@@ -68,21 +68,22 @@ For the broadcast used in the propose and vote actions we implemented the Unifor
 
 \pagebreak
 
-\subsection{Clearing List at Start of Epoch:}
-
-To improve performance, we use an approach of clearing the list at the start of each period. This optimization assures that we start from scratch, avoiding redundant data processing from earlier epochs and optimizing memory use.
-
-\subsection{Saving of Echo Contents:} \label{2.3}
+\subsection{Saving of Echo Contents:} \label{2.2}
 
 We save the contents of the echo to avoid receiving duplicate echo content across epochs.
 
+\subsection{Clearing List at Start of Epoch:}
+
+To improve performance, we use an approach of clearing the list of the received messages at the start of each period. This optimization assures that we start from scratch, avoiding redundant data processing from earlier epochs and optimizing memory use.
+
+
 \subsection{Restricting Voting to Nodes Receiving Echo:}
 
-To improve the voting process, only nodes that receive the echo of the proposed block are allowed to vote. This decision is especially important for avoiding the leader vote because it already has the real proposed block via URB broadcast, therefore it will not receive the echo of the proposed as stated in \ref{2.3}.
+To improve the voting process, only nodes that receive the echo of the proposed block are allowed to vote. This decision is especially important for avoiding the leader vote because it already has the real proposed block via URB broadcast, therefore it will not receive the echo of the proposed as stated in \ref{2.2}.
 
 \subsection{Implementation of \texttt{CheckFinalizationCriteria()}:}
 
-This function is designed to identify the last finalized block, serving as a reference point for subsequent additions to the blockchain. Blocks that do not meet or exceed the length of the last finalized block are deemed invalid.
+The method was developed to identify the most recently completed block and act as a reference point for subsequent blockchain additions. Blocks that do not satisfy or are shorter than the length of the last finished block are considered invalid.
 
 
 

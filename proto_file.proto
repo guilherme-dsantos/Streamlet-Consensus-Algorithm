@@ -11,6 +11,7 @@ message Block {
   int32 epoch = 2;
   int32 length = 3;
   string transactions = 4;
+  int32 numVotes = 5;
 }
 
 message Content {

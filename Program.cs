@@ -1,7 +1,7 @@
-﻿
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Text;
 using Google.Protobuf;
 
 internal class Program{
@@ -18,11 +18,11 @@ internal class Program{
     // Consensus and Voting
     public static bool VotedInEpoch; // Nodes can only vote at most once on each epoch
     public static int Epoch = 0;
-    public static int DeltaEpoch = 10_000;
-    public static Block ProposedBlock = new();
-
+    public static int DeltaEpoch = 5_000;
+    //public static Block ProposedBlock = new();
+    public static Dictionary<ByteString, Block> ProposedBlocks = new();
     // Blockchain
-    public static List<Block> BlockChain = new();
+    public static LinkedList<Block> BlockChain = new();
 
     // Thread Synchronization
     public static readonly object MessageLock = new();
@@ -34,6 +34,8 @@ internal class Program{
     // Pointer for Last Finalized Block
     public static int PointerLastFinalized = 0;
 
+    static readonly object lockObject = new();
+    public static string BlockchainFilePath = "";
 
     static void Main(string[] args) {
         
@@ -48,12 +50,20 @@ internal class Program{
         }
 
         IDNode = int.Parse(args[0]);
+
+        BlockchainFilePath = "Blockchain_files/blockchain_from_node_" + IDNode + ".txt";
+        
+        if (File.Exists(BlockchainFilePath)){
+            File.Delete(BlockchainFilePath);
+        }
         
         // Reads the corresponding address from the ips.txt file
         string address_from_file = File.ReadLines("ips.txt").Skip(IDNode-1).Take(1).First();  
 
         //Genesis block
-        BlockChain.Add(InitBlock());
+        BlockChain.AddLast(InitBlock());
+    
+        AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + InitBlock().Epoch + " Lenght: " + InitBlock().Length + " Transaction: " + InitBlock().Transactions);
 
         int seed = 9054;
         Random random = new(seed);
@@ -85,15 +95,18 @@ internal class Program{
 
         // Wait for all nodes to be ready
         cde.Wait();
+        Timer failureDetector = new(_ => CheckClientConnections(), null, 0, 100);
         while(true) {
             //Clears received messages at the start of each epoch for performance reasons
             ReceivedMessages.Clear();
             //Sets voted to false at the start of each epoch
             VotedInEpoch = false; 
             ++Epoch;
+            Console.WriteLine("EPOCH: "+ Epoch);
+            
             // Generate random number with given seed
             Leader = random.Next(TotalNodes) + 1;
-
+            Console.WriteLine("LEADER: "  +Leader);
             // If I am the leader, propose a block
             if(IsLeader()) { 
                 byte[] hash = ComputeParentHash();
@@ -126,7 +139,6 @@ internal class Program{
             if (bytesRead == 0) {
                 continue;
             }
-            
             Message? receivedMessage = DeserializeMessage(data, bytesRead);
             if (receivedMessage != null) {
                 lock(MessageLock) {
@@ -135,25 +147,30 @@ internal class Program{
                         Thread.Sleep(100);
                         HandleEcho(receivedMessage);
                         if(IsProposeOrEchoPropose(receivedMessage)) {
-                            ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
-                            Interlocked.Exchange(ref Votes,0);
+                            //ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
+                            if(receivedMessage.MessageType == Type.Propose){
+                                if(!ProposedBlocks.ContainsKey(receivedMessage.Content.Block.Hash)) {
+                                    ProposedBlocks.Add(receivedMessage.Content.Block.Hash,receivedMessage.Content.Block);
+                                    Console.WriteLine("Added to proposed blocks list using propose : " + receivedMessage.Content.Block);
+                                    
+                                }
+                            }
+                            if(receivedMessage.MessageType == Type.Echo){
+                                if(!ProposedBlocks.ContainsKey(receivedMessage.Content.Message.Content.Block.Hash)) {
+                                    ProposedBlocks.Add(receivedMessage.Content.Message.Content.Block.Hash, receivedMessage.Content.Message.Content.Block);
+                                    Console.WriteLine("Added to proposed blocks list using echo : " + receivedMessage.Content.Block);
+                                }
+                            }
+
+                            //Interlocked.Exchange(ref Votes,0);
                             if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch && IsBlockValid(receivedMessage.Content.Message)) {
                                 BroadcastVotes(receivedMessage);
                                 VotedInEpoch = true;
                             }
                         }
                         if(IsVoteOrEchoVote(receivedMessage)) {
-                            Interlocked.Increment(ref Votes);
-                            if(Votes > TotalNodes / 2) {
-                                BlockChain.Add(ProposedBlock);
-                                Interlocked.Exchange(ref Votes,0);
-                                CheckFinalizationCriteria();
-                                ProposedBlock = new();
-                                Console.WriteLine("====={Blockchain}=====");
-                                foreach(Block b in BlockChain) {
-                                    Console.WriteLine(b);
-                                }
-                            }
+                            UpdateNumVotes(receivedMessage);
+                        
                         } 
                     }
                 }
@@ -167,9 +184,12 @@ internal class Program{
     public static void URB_Broadcast(Message message) {
         // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(message);
+        Console.WriteLine(serializedMessage);
         // Send the serialized message to myself
         MyselfStream?.Write(serializedMessage, 0, serializedMessage.Length);
     }
+
+    
     /**
         * Function to echo a message
         */
@@ -184,9 +204,15 @@ internal class Program{
          // Serialize the message to bytes
         byte[] serializedMessage = SerializeMessage(echoMessage);
         foreach (TcpClient otherClient in OtherAddresses) {
+           try {
             NetworkStream otherStream = otherClient.GetStream();
             // Send only the relevant bytes received, not the entire buffer
             otherStream.Write(serializedMessage, 0, serializedMessage.Length);
+            } catch (IOException) {
+                //Console.Error.WriteLine("Error sending echo: " + ex.Message);
+                OtherAddresses.Remove(otherClient);
+                otherClient.Close();
+            }
         }
     }
     /**
@@ -197,7 +223,7 @@ internal class Program{
             Hash = ByteString.CopyFrom(new byte[] {0}),
             Epoch = 0,
             Length = 0,
-            Transactions = {}
+            Transactions = ""
         };
         return block;
     }
@@ -205,22 +231,23 @@ internal class Program{
         * Function to propose a block
         */
     public static void ProposeBlock(int node_id, byte[] hash, int epoch, int length, string transactions){
-       Message messageWithBlock = new()
-    {
-        MessageType = Type.Propose,
-        Content = new Content
-        {
-            Block = new Block
-            {
-                Hash = ByteString.CopyFrom(hash),
-                Epoch = epoch,
-                Length = length,
-                Transactions = transactions  // Initialize as a new list
-            }
-        },
-        Sender = node_id
-    };
 
+        Block block = new(){
+            Hash = ByteString.CopyFrom(hash),
+            Epoch = epoch,
+            Length = length,
+            Transactions = transactions
+        };
+
+        Message messageWithBlock = new() {
+            MessageType = Type.Propose,
+            Content = new() {
+                Block = block,
+            },
+            Sender = node_id
+        };
+
+        
         URB_Broadcast(messageWithBlock);
     }
     /**
@@ -274,22 +301,38 @@ internal class Program{
     /**
         * Function to check if the finalization criteria is met
         */
-    public static void CheckFinalizationCriteria(){
-        if(BlockChain.Count < 3) {
-            return;
+    public static Block GetLastFinalizedBlock(){
+        if (BlockChain.Count >= 3 ) {
+                // Get the last node
+            LinkedListNode<Block>? lastNode = BlockChain.Last;
+            List<Block> lastThreeBlocks = new();
+            // Traverse backward and add values to the list
+            for (int i = 0; i < 3 && lastNode != null; i++) {
+                lastThreeBlocks.Insert(0, lastNode.Value); // Insert at the beginning of the list
+                lastNode = lastNode.Previous;
+            }
+            if(lastThreeBlocks[0].Epoch == lastThreeBlocks[1].Epoch - 1 && lastThreeBlocks[1].Epoch == lastThreeBlocks[2].Epoch - 1 &&
+            lastThreeBlocks[0].Length == lastThreeBlocks[1].Length - 1 && lastThreeBlocks[1].Length == lastThreeBlocks[2].Length - 1) {
+                Console.WriteLine($"Finalized block {lastThreeBlocks[1]}");
+                AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + lastThreeBlocks[1].Epoch + " Lenght: " + lastThreeBlocks[1].Length + " Transaction: " + lastThreeBlocks[1].Transactions);
+                return lastThreeBlocks[1];
+            }
         }
-        List<Block> lastBlocks = BlockChain.GetRange(BlockChain.Count - 3, 3);
-        if(lastBlocks[0].Epoch == lastBlocks[1].Epoch - 1 && lastBlocks[1].Epoch == lastBlocks[2].Epoch - 1 &&
-           lastBlocks[0].Length == lastBlocks[1].Length - 1 && lastBlocks[1].Length == lastBlocks[2].Length - 1) {
-            PointerLastFinalized = lastBlocks[1].Length;
-        }
+        return InitBlock();
     }
     /**
         * Function to broadcast votes
         */
     public static void BroadcastVotes(Message messageWithBlock){
-        Block voteBlock = messageWithBlock.Content.Message.Content.Block;
-        voteBlock.Transactions = "0";
+
+        Block originalBlock = messageWithBlock.Content.Message.Content.Block;
+        Block voteBlock = new() {
+            Hash = originalBlock.Hash,
+            Epoch = originalBlock.Epoch,
+            Length = originalBlock.Length,
+            Transactions = "0",  // Change the transaction for the voting process
+        };
+
         Message voteMessage = new() {
             MessageType = Type.Vote,
             Content = new Content { 
@@ -306,7 +349,7 @@ internal class Program{
         lock(MessageLock) {
             Block block = message.Content.Block;
             int maxId = BlockChain.Max(block => block.Epoch);
-            if(block.Length <= PointerLastFinalized) {
+            if(block.Length <= GetLastFinalizedBlock().Length) {
                 Console.WriteLine("Block length is not valid");
                 return false;
             }
@@ -415,4 +458,66 @@ internal class Program{
         return (decimal)new Random().Next(1, 10000) + (decimal)new Random().NextDouble();
     }
     
+    static void AppendLinesToFile(string filePath, string line) {
+        // Use FileMode.Create to create a new file or truncate an existing file
+        using StreamWriter writer = new(filePath, true);
+        writer.WriteLine(line);
+    }
+
+    static bool IsConnected(TcpClient client) {
+    try {
+        if (client != null && client.Client != null && client.Client.Connected) {
+            return !(client.Client.Poll(1, SelectMode.SelectRead) && client.Client.Available == 0);
+        } else
+            return false;
+    } catch {
+        return false;
+    }
+   }
+   public static void CheckClientConnections() {
+        foreach (TcpClient client in OtherAddresses.ToList()) {
+            if (!IsConnected(client)) {
+                OtherAddresses.Remove(client);
+            }
+        }
+    }
+
+    static void UpdateNumVotes(Message receivedMessage) {
+        lock(MessageLock) {
+        ByteString hashToUpdate;
+
+        if(receivedMessage.MessageType == Type.Vote) {
+            hashToUpdate = receivedMessage.Content.Block.Hash; 
+        }
+        else {
+            hashToUpdate = receivedMessage.Content.Message.Content.Block.Hash;
+        }
+
+       
+        // Try to get the block with the specified hash
+        if (ProposedBlocks.TryGetValue(hashToUpdate, out Block? blockToUpdate)) {
+            // Update the NumVotes attribute
+            
+            blockToUpdate.NumVotes += 1;
+            if(blockToUpdate.NumVotes > TotalNodes / 2 ) {
+                BlockChain.AddLast(blockToUpdate);
+                Console.WriteLine("Added to the blockchain" + blockToUpdate);
+                Block lastFinalizedBlock = GetLastFinalizedBlock();
+                ReceivedMessages.RemoveAll(message => message.Content.Block.Epoch <= lastFinalizedBlock.Epoch);
+                var block = BlockChain.First;
+                while (block != null) {
+                    var next = block.Next;
+                    if (block.Value.Epoch < lastFinalizedBlock.Epoch)
+                        BlockChain.Remove(block);
+                    block = next;
+                }
+                //AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + InitBlock().Epoch + " Lenght: " + InitBlock().Length + " Transaction: " + InitBlock().Transactions);
+                ProposedBlocks.Remove(hashToUpdate);
+            }
+        }
+        else {
+            Console.WriteLine("Dont need more votes, block already notarized");
+        }
+    }
+    }
 }

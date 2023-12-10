@@ -22,17 +22,18 @@ public static partial class ProtoFileReflection {
   static ProtoFileReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "ChBwcm90b19maWxlLnByb3RvIkoKBUJsb2NrEgwKBGhhc2gYASABKAwSDQoF",
+          "ChBwcm90b19maWxlLnByb3RvIlwKBUJsb2NrEgwKBGhhc2gYASABKAwSDQoF",
           "ZXBvY2gYAiABKAUSDgoGbGVuZ3RoGAMgASgFEhQKDHRyYW5zYWN0aW9ucxgE",
-          "IAEoCSJOCgdDb250ZW50EhsKB21lc3NhZ2UYASABKAsyCC5NZXNzYWdlSAAS",
-          "FwoFYmxvY2sYAiABKAsyBi5CbG9ja0gAQg0KC0NvbnRlbnREYXRhIlEKB01l",
-          "c3NhZ2USGwoMbWVzc2FnZV90eXBlGAEgASgOMgUuVHlwZRIZCgdjb250ZW50",
-          "GAIgASgLMgguQ29udGVudBIOCgZzZW5kZXIYAyABKAUqJwoEVHlwZRILCgdQ",
-          "cm9wb3NlEAASCAoEVm90ZRABEggKBEVjaG8QAmIGcHJvdG8z"));
+          "IAEoCRIQCghudW1Wb3RlcxgFIAEoBSJOCgdDb250ZW50EhsKB21lc3NhZ2UY",
+          "ASABKAsyCC5NZXNzYWdlSAASFwoFYmxvY2sYAiABKAsyBi5CbG9ja0gAQg0K",
+          "C0NvbnRlbnREYXRhIlEKB01lc3NhZ2USGwoMbWVzc2FnZV90eXBlGAEgASgO",
+          "MgUuVHlwZRIZCgdjb250ZW50GAIgASgLMgguQ29udGVudBIOCgZzZW5kZXIY",
+          "AyABKAUqJwoEVHlwZRILCgdQcm9wb3NlEAASCAoEVm90ZRABEggKBEVjaG8Q",
+          "AmIGcHJvdG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Type), }, null, new pbr::GeneratedClrTypeInfo[] {
-          new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Transactions" }, null, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::Block), global::Block.Parser, new[]{ "Hash", "Epoch", "Length", "Transactions", "NumVotes" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Content), global::Content.Parser, new[]{ "Message", "Block" }, new[]{ "ContentData" }, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Message), global::Message.Parser, new[]{ "MessageType", "Content", "Sender" }, null, null, null, null)
         }));
@@ -89,6 +90,7 @@ public sealed partial class Block : pb::IMessage<Block>
     epoch_ = other.epoch_;
     length_ = other.length_;
     transactions_ = other.transactions_;
+    numVotes_ = other.numVotes_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -146,6 +148,18 @@ public sealed partial class Block : pb::IMessage<Block>
     }
   }
 
+  /// <summary>Field number for the "numVotes" field.</summary>
+  public const int NumVotesFieldNumber = 5;
+  private int numVotes_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public int NumVotes {
+    get { return numVotes_; }
+    set {
+      numVotes_ = value;
+    }
+  }
+
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override bool Equals(object other) {
@@ -165,6 +179,7 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Epoch != other.Epoch) return false;
     if (Length != other.Length) return false;
     if (Transactions != other.Transactions) return false;
+    if (NumVotes != other.NumVotes) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -176,6 +191,7 @@ public sealed partial class Block : pb::IMessage<Block>
     if (Epoch != 0) hash ^= Epoch.GetHashCode();
     if (Length != 0) hash ^= Length.GetHashCode();
     if (Transactions.Length != 0) hash ^= Transactions.GetHashCode();
+    if (NumVotes != 0) hash ^= NumVotes.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -210,6 +226,10 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(34);
       output.WriteString(Transactions);
     }
+    if (NumVotes != 0) {
+      output.WriteRawTag(40);
+      output.WriteInt32(NumVotes);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
     }
@@ -236,6 +256,10 @@ public sealed partial class Block : pb::IMessage<Block>
       output.WriteRawTag(34);
       output.WriteString(Transactions);
     }
+    if (NumVotes != 0) {
+      output.WriteRawTag(40);
+      output.WriteInt32(NumVotes);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
     }
@@ -257,6 +281,9 @@ public sealed partial class Block : pb::IMessage<Block>
     }
     if (Transactions.Length != 0) {
       size += 1 + pb::CodedOutputStream.ComputeStringSize(Transactions);
+    }
+    if (NumVotes != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeInt32Size(NumVotes);
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -281,6 +308,9 @@ public sealed partial class Block : pb::IMessage<Block>
     }
     if (other.Transactions.Length != 0) {
       Transactions = other.Transactions;
+    }
+    if (other.NumVotes != 0) {
+      NumVotes = other.NumVotes;
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -313,6 +343,10 @@ public sealed partial class Block : pb::IMessage<Block>
           Transactions = input.ReadString();
           break;
         }
+        case 40: {
+          NumVotes = input.ReadInt32();
+          break;
+        }
       }
     }
   #endif
@@ -342,6 +376,10 @@ public sealed partial class Block : pb::IMessage<Block>
         }
         case 34: {
           Transactions = input.ReadString();
+          break;
+        }
+        case 40: {
+          NumVotes = input.ReadInt32();
           break;
         }
       }
