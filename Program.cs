@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Text;
 using Google.Protobuf;
 
 internal class Program{
@@ -19,7 +18,7 @@ internal class Program{
     public static bool VotedInEpoch; // Nodes can only vote at most once on each epoch
     public static int Epoch = 0;
     public static int DeltaEpoch = 5_000;
-    //public static Block ProposedBlock = new();
+
     public static Dictionary<ByteString, Block> ProposedBlocks = new();
     // Blockchain
     public static LinkedList<Block> BlockChain = new();
@@ -31,11 +30,8 @@ internal class Program{
     // Leader Election
     public static int Leader;
 
-    // Pointer for Last Finalized Block
-    public static int PointerLastFinalized = 0;
-
-    static readonly object lockObject = new();
     public static string BlockchainFilePath = "";
+    public static List<string> LostTransactions = new();
 
     static void Main(string[] args) {
         
@@ -102,11 +98,11 @@ internal class Program{
             //Sets voted to false at the start of each epoch
             VotedInEpoch = false; 
             ++Epoch;
-            Console.WriteLine("EPOCH: "+ Epoch);
+            Console.WriteLine("Epoch: "+ Epoch);
             
             // Generate random number with given seed
             Leader = random.Next(TotalNodes) + 1;
-            Console.WriteLine("LEADER: "  +Leader);
+            Console.WriteLine("Leader: "  +Leader);
             // If I am the leader, propose a block
             if(IsLeader()) { 
                 byte[] hash = ComputeParentHash();
@@ -144,6 +140,7 @@ internal class Program{
                 lock(MessageLock) {
                     if (!IsMessageReceived(receivedMessage)) {
                         AddMessage(receivedMessage);
+                        Console.WriteLine("Message received: " + receivedMessage);
                         Thread.Sleep(100);
                         HandleEcho(receivedMessage);
                         if(IsProposeOrEchoPropose(receivedMessage)) {
@@ -236,7 +233,7 @@ internal class Program{
             Hash = ByteString.CopyFrom(hash),
             Epoch = epoch,
             Length = length,
-            Transactions = transactions
+            Transactions = transactions + string.Join(", ", LostTransactions)
         };
 
         Message messageWithBlock = new() {
@@ -247,7 +244,7 @@ internal class Program{
             Sender = node_id
         };
 
-        
+        LostTransactions.Clear();
         URB_Broadcast(messageWithBlock);
     }
     /**
@@ -350,11 +347,11 @@ internal class Program{
             Block block = message.Content.Block;
             int maxId = BlockChain.Max(block => block.Epoch);
             if(block.Length <= GetLastFinalizedBlock().Length) {
-                Console.WriteLine("Block length is not valid");
+                LostTransactions.Add(block.Transactions);
                 return false;
             }
             if(block.Epoch <= maxId) {
-                Console.WriteLine("Block epoch is not valid");
+                LostTransactions.Add(block.Transactions);
                 return false;
             }
             return true;
@@ -499,6 +496,7 @@ internal class Program{
             // Update the NumVotes attribute
             
             blockToUpdate.NumVotes += 1;
+            Console.WriteLine("Voted for " + blockToUpdate);
             if(blockToUpdate.NumVotes > TotalNodes / 2 ) {
                 BlockChain.AddLast(blockToUpdate);
                 Console.WriteLine("Added to the blockchain" + blockToUpdate);
