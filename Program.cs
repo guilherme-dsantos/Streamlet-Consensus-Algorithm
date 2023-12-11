@@ -1,11 +1,13 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Google.Protobuf;
-
+using System.Linq;
 internal class Program{
 
-    // Network Configuration
+    // Configuration
     public static int TotalNodes = File.ReadLines("ips.txt").Count();
     public static int IDNode;
     public static List<TcpClient> OtherAddresses = new();
@@ -13,11 +15,12 @@ internal class Program{
     public static volatile int Votes = 0;
     public static string[] SelfAddress = new string[2];
     public static NetworkStream? MyselfStream;
+    public static string BlockchainFilePath = "";
 
     // Consensus and Voting
     public static bool VotedInEpoch; // Nodes can only vote at most once on each epoch
     public static int Epoch = 0;
-    public static int DeltaEpoch = 5_000;
+    public static int DeltaEpoch = 3_000;
 
     public static Dictionary<ByteString, Block> ProposedBlocks = new();
     // Blockchain
@@ -30,7 +33,13 @@ internal class Program{
     // Leader Election
     public static int Leader;
 
-    public static string BlockchainFilePath = "";
+    //Fork
+    public static int confusion_start = 0;
+    public static int confusion_duration = 2;
+    public static Queue<Message> queue = new();
+
+
+    
     public static List<string> LostTransactions = new();
 
     static void Main(string[] args) {
@@ -98,10 +107,15 @@ internal class Program{
             //Sets voted to false at the start of each epoch
             VotedInEpoch = false; 
             ++Epoch;
-            Console.WriteLine("Epoch: "+ Epoch);
-            
+            if(random.NextDouble() < 0.4 && IDNode == 1) {
+                Console.WriteLine("Sleeping...");
+                Thread.Sleep(12000);
+            }
+                
             // Generate random number with given seed
-            Leader = random.Next(TotalNodes) + 1;
+            //Leader = random.Next(TotalNodes) + 1;
+            Leader = GetLeader(random);
+             Console.WriteLine("Epoch: "+ Epoch);
             Console.WriteLine("Leader: "  +Leader);
             // If I am the leader, propose a block
             if(IsLeader()) { 
@@ -138,29 +152,32 @@ internal class Program{
             Message? receivedMessage = DeserializeMessage(data, bytesRead);
             if (receivedMessage != null) {
                 lock(MessageLock) {
+                    queue.Enqueue(receivedMessage);
+                    if (queue.Count > 0) {
+                        if (Epoch < confusion_start || Epoch >= confusion_start + confusion_duration - 1) {
+                            receivedMessage = queue.Dequeue();
+                        }
+                    }
                     if (!IsMessageReceived(receivedMessage)) {
                         AddMessage(receivedMessage);
-                        Console.WriteLine("Message received: " + receivedMessage);
+                        //Console.WriteLine("Message received: " + receivedMessage);
                         Thread.Sleep(100);
                         HandleEcho(receivedMessage);
                         if(IsProposeOrEchoPropose(receivedMessage)) {
                             //ProposedBlock = receivedMessage.MessageType == Type.Propose ? receivedMessage.Content.Block : receivedMessage.Content.Message.Content.Block;
                             if(receivedMessage.MessageType == Type.Propose){
                                 if(!ProposedBlocks.ContainsKey(receivedMessage.Content.Block.Hash)) {
-                                    ProposedBlocks.Add(receivedMessage.Content.Block.Hash,receivedMessage.Content.Block);
-                                    Console.WriteLine("Added to proposed blocks list using propose : " + receivedMessage.Content.Block);
-                                    
+                                    ProposedBlocks.Add(receivedMessage.Content.Block.Hash,receivedMessage.Content.Block);   
                                 }
                             }
                             if(receivedMessage.MessageType == Type.Echo){
                                 if(!ProposedBlocks.ContainsKey(receivedMessage.Content.Message.Content.Block.Hash)) {
                                     ProposedBlocks.Add(receivedMessage.Content.Message.Content.Block.Hash, receivedMessage.Content.Message.Content.Block);
-                                    Console.WriteLine("Added to proposed blocks list using echo : " + receivedMessage.Content.Block);
                                 }
                             }
 
                             //Interlocked.Exchange(ref Votes,0);
-                            if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch && IsBlockValid(receivedMessage.Content.Message)) {
+                            if(receivedMessage.MessageType == Type.Echo && !VotedInEpoch /*&& IsBlockValid(receivedMessage.Content.Message.Content.Block)*/) {
                                 BroadcastVotes(receivedMessage);
                                 VotedInEpoch = true;
                             }
@@ -310,9 +327,30 @@ internal class Program{
             }
             if(lastThreeBlocks[0].Epoch == lastThreeBlocks[1].Epoch - 1 && lastThreeBlocks[1].Epoch == lastThreeBlocks[2].Epoch - 1 &&
             lastThreeBlocks[0].Length == lastThreeBlocks[1].Length - 1 && lastThreeBlocks[1].Length == lastThreeBlocks[2].Length - 1) {
-                Console.WriteLine($"Finalized block {lastThreeBlocks[1]}");
+                // Find the last 3rd node
+                lastNode = BlockChain.Last;
+                for (int i = 0; i < 2 && lastNode != null; i++) {
+                    lastNode = lastNode.Previous;
+                }
+
+                List<Block> finalizedChain = new();
+
+                // Traverse from the last 3rd node until the end
+                while (lastNode != null){
+                    // Access the value of the current node
+                    Block b = lastNode.Value;
+                    if(!BlockAlreadyFinalized("Block Epoch: " + b.Epoch.ToString())){
+                       finalizedChain.Add(b);
+                    } else {break;}
+                    // Move to the previous node
+                    lastNode = lastNode.Previous;
+                }
+                for (int i = finalizedChain.Count - 1; i >= 0; i--) { 
+                    AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + finalizedChain[i].Epoch + " Lenght: " + finalizedChain[i].Length + " Transaction: " + finalizedChain[i].Transactions);
+                }
+                finalizedChain.Clear();
                 AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + lastThreeBlocks[1].Epoch + " Lenght: " + lastThreeBlocks[1].Length + " Transaction: " + lastThreeBlocks[1].Transactions);
-                return lastThreeBlocks[1];
+            return lastThreeBlocks[1];
             }
         }
         return InitBlock();
@@ -342,9 +380,9 @@ internal class Program{
     /**
         * Function to check if a block is valid
         */
-    public static bool IsBlockValid(Message message) {
+    public static bool IsBlockValid(Block block) {
         lock(MessageLock) {
-            Block block = message.Content.Block;
+            //Block block = message.Content.Block;
             int maxId = BlockChain.Max(block => block.Epoch);
             if(block.Length <= GetLastFinalizedBlock().Length) {
                 LostTransactions.Add(block.Transactions);
@@ -386,8 +424,7 @@ internal class Program{
             Message message = new();
             message.MergeFrom(data, 0, length);
             return message;
-        } catch (InvalidProtocolBufferException ex) {
-            Console.Error.WriteLine("Error deserializing message: " + ex.Message);
+        } catch (InvalidProtocolBufferException) {
             return null;
         }
     }
@@ -481,41 +518,90 @@ internal class Program{
 
     static void UpdateNumVotes(Message receivedMessage) {
         lock(MessageLock) {
-        ByteString hashToUpdate;
+            ByteString hashToUpdate;
 
-        if(receivedMessage.MessageType == Type.Vote) {
-            hashToUpdate = receivedMessage.Content.Block.Hash; 
-        }
-        else {
-            hashToUpdate = receivedMessage.Content.Message.Content.Block.Hash;
-        }
+            if(receivedMessage.MessageType == Type.Vote) {
+                hashToUpdate = receivedMessage.Content.Block.Hash; 
+            }
+            else {
+                hashToUpdate = receivedMessage.Content.Message.Content.Block.Hash;
+            }
 
-       
-        // Try to get the block with the specified hash
-        if (ProposedBlocks.TryGetValue(hashToUpdate, out Block? blockToUpdate)) {
-            // Update the NumVotes attribute
-            
-            blockToUpdate.NumVotes += 1;
-            Console.WriteLine("Voted for " + blockToUpdate);
-            if(blockToUpdate.NumVotes > TotalNodes / 2 ) {
-                BlockChain.AddLast(blockToUpdate);
-                Console.WriteLine("Added to the blockchain" + blockToUpdate);
-                Block lastFinalizedBlock = GetLastFinalizedBlock();
-                ReceivedMessages.RemoveAll(message => message.Content.Block.Epoch <= lastFinalizedBlock.Epoch);
-                var block = BlockChain.First;
-                while (block != null) {
-                    var next = block.Next;
-                    if (block.Value.Epoch < lastFinalizedBlock.Epoch)
-                        BlockChain.Remove(block);
-                    block = next;
+        
+            // Try to get the block with the specified hash
+            if (ProposedBlocks.TryGetValue(hashToUpdate, out Block? blockToUpdate)) {
+                // Update the NumVotes attribute
+                
+                blockToUpdate.NumVotes += 1;
+                //Console.WriteLine("Voted for " + blockToUpdate);
+                if(blockToUpdate.NumVotes > TotalNodes / 2 ) {
+                    int length = blockToUpdate.Length;
+                    LinkedListNode<Block>? blockNode = null;
+                    
+                    for (var node = BlockChain.First; node != null; node = node.Next) {
+                        if (node.Value.Length == length - 1) {
+                            blockNode = node;
+                            break;
+                        }
+                    }
+
+                    BlockChain.AddAfter(blockNode!, blockToUpdate);
+                
+                    //BlockChain.AddLast(blockToUpdate);
+                    Console.WriteLine("Added block with length: " + blockToUpdate.Length);
+                    //Console.WriteLine("Added to the blockchain" + blockToUpdate);
+                    Block lastFinalizedBlock = GetLastFinalizedBlock();
+                    ReceivedMessages.RemoveAll(message => message.Content.Block.Epoch <= lastFinalizedBlock.Epoch);
+                    var block = BlockChain.First;
+                    while (block != null) {
+                        var next = block.Next;
+                        if (block.Value.Epoch < lastFinalizedBlock.Epoch)
+                            BlockChain.Remove(block);
+                        block = next;
+                    }
+                    //AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + InitBlock().Epoch + " Lenght: " + InitBlock().Length + " Transaction: " + InitBlock().Transactions);
+                    ProposedBlocks.Remove(hashToUpdate);
                 }
-                //AppendLinesToFile(BlockchainFilePath, "Block Epoch: " + InitBlock().Epoch + " Lenght: " + InitBlock().Length + " Transaction: " + InitBlock().Transactions);
-                ProposedBlocks.Remove(hashToUpdate);
+            }
+            else {
+                //Console.WriteLine("Dont need more votes, block already notarized");
             }
         }
-        else {
-            Console.WriteLine("Dont need more votes, block already notarized");
+    }
+
+    static bool BlockAlreadyFinalized(string targetBlock)
+    {
+        // Check if the file exists
+        if (!File.Exists(BlockchainFilePath))
+        {
+            Console.WriteLine($"File not found: {BlockchainFilePath}");
+            return false;
         }
+
+        // Read the file line by line
+        using StreamReader reader = new(BlockchainFilePath);
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            // Check if the target word exists in the current line
+            if (line.Contains(targetBlock))
+            {
+                return true;
+            }
+        }
+
+        // The word was not found in the file
+        return false;
     }
+
+    public static int GetLeader(Random random){
+        if (Epoch < confusion_start || Epoch >= confusion_start + confusion_duration - 1) {
+            return random.Next(1, TotalNodes + 1);
+        }  
+        else{
+            return Epoch % TotalNodes;
+        }
+            
     }
+
 }
